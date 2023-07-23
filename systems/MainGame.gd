@@ -50,7 +50,7 @@ func _process(delta):
 		var pixel_board_width = $"/root/Constants".TILE_WIDTH * $"/root/Constants".BOARD_WIDTH_IN_TILES
 		var pixel_board_height = $"/root/Constants".TILE_HEIGHT * $"/root/Constants".BOARD_HEIGHT_IN_TILES
 		
-		var bounding_rectangle = Rect2($Tiles.position.x, $Tiles.position.y, pixel_board_width, pixel_board_height)
+		var bounding_rectangle = Rect2($Board/Tiles.position.x, $Board/Tiles.position.y, pixel_board_width, pixel_board_height)
 		if bounding_rectangle.has_point(position):
 			handle_click(bounding_rectangle, position)
 
@@ -308,7 +308,7 @@ func initialize_from_fen(fen):
 					var piece = Piece.instantiate()
 					piece.create(piece_info)
 					set_coord(cur_pos, piece)
-					$Tiles.add_child(piece)
+					$Board/Tiles.add_child(piece)
 					cur_pos = cur_pos.get_in_direction($"/root/Globals".Direction.FILE_UP)
 			cur_pos = cur_pos.get_in_direction($"/root/Globals".Direction.RANK_DOWN)
 			cur_pos.set_file("A")
