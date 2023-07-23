@@ -1,9 +1,10 @@
-[gd_scene load_steps=6 format=3 uid="uid://cbmvjf3ejtrbg"]
+[gd_scene load_steps=7 format=3 uid="uid://cbmvjf3ejtrbg"]
 
 [ext_resource type="Script" path="res://systems/MainGame.gd" id="1_r2qtu"]
 [ext_resource type="Script" path="res://scenes/Tiles.gd" id="1_whl31"]
 [ext_resource type="PackedScene" uid="uid://d0nhad3sfsena" path="res://entities/tile.tscn" id="2_yaddp"]
 [ext_resource type="Script" path="res://systems/PieceManager.gd" id="3_bjd1x"]
+[ext_resource type="PackedScene" uid="uid://bknyt3jr1wtsx" path="res://entities/tile_marker.tscn" id="4_uer28"]
 [ext_resource type="Script" path="res://systems/MoveGenerator.gd" id="5_68qmr"]
 
 [node name="MainGame" type="Node2D"]
@@ -14,6 +15,13 @@ position = Vector2(50, 50)
 script = ExtResource("1_whl31")
 
 [node name="Tile" parent="Tiles" instance=ExtResource("2_yaddp")]
+
+[node name="Markers" type="Node2D" parent="."]
+position = Vector2(50, 50)
+
+[node name="TileMarker" parent="Markers" instance=ExtResource("4_uer28")]
+visible = false
+position = Vector2(50, 50)
 
 [node name="PieceManager" type="Node" parent="."]
 script = ExtResource("3_bjd1x")

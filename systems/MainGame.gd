@@ -2,18 +2,22 @@ extends Node2D
 
 var Coord = load("res://systems/coord.gd")
 var Piece = preload("res://entities/piece.tscn")
+var TileMarker = preload("res://entities/tile_marker.tscn")
 var MoveGenerator = load("res://systems/MoveGenerator.gd")
 
 var board_enabled : bool = true
 var board : Array = []
+var markers : Array = []
 var player_turn
 var in_check : Array[bool] = [false, false]
 var castling_permission : Array[bool] = [true, true, true, true]
 var half_moves : int = 0
 var full_moves : int = 1
 var move_generator
+
 var selected_tile
 var selected_piece
+var moves : Array = []
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -21,8 +25,15 @@ func _ready():
 	
 	for r in range(0, $"/root/Constants".BOARD_WIDTH_IN_TILES):
 		board.append([])
+		markers.append([])
 		for c in range(0, $"/root/Constants".BOARD_HEIGHT_IN_TILES):
 			board[r].append(null)
+			var tileMarker = TileMarker.instantiate()
+			tileMarker.position.x = c * $"/root/Constants".TILE_WIDTH
+			tileMarker.position.y = r * $"/root/Constants".TILE_HEIGHT
+			tileMarker.visible = false
+			$Markers.add_child(tileMarker)
+			markers[r].append(tileMarker)
 	
 	player_turn = $"/root/Globals".PieceColor.WHITE
 	
@@ -74,9 +85,9 @@ func update_incheck():
 		var attacked_square = item[1]
 		var piece_at_attacked_location = get_coord(attacked_square)
 		if piece_at_attacked_location != null:
-			if piece_at_attacked_location.get_type() == $"/root/Globals".PieceType.KING and piece_at_attacked_location.get_color() == $"/root/Globals".Piece.get_opposite_color(
+			if piece_at_attacked_location.get_type() == $"/root/Globals".PieceType.KING and piece_at_attacked_location.get_color() == get_opposite_color(
 					player_turn):
-				in_check[$"/root/Globals".get_opposite_color(player_turn)] = true
+				in_check[get_opposite_color(player_turn)] = true
 
 func flip_turn():
 	if is_game_over():
@@ -97,10 +108,45 @@ func flip_turn():
 func reset_half_moves():
 	half_moves = 0
 
+func update_markers(valid_moves):
+	for row in markers:
+		for marker in row:
+			marker.visible = false
+	
+	if selected_tile != null:
+		markers[selected_tile.get_row()][selected_tile.get_col()].set_color(Color.BLUE)
+		markers[selected_tile.get_row()][selected_tile.get_col()].visible = true
+	
+	if valid_moves != null:
+		for item in valid_moves:
+			var move_type = item[0]
+			var valid_move = item[1]
+			var color = Color.GREEN
+			
+			if move_type == MoveGenerator.MoveType.ATTACK:
+				color = Color.RED
+			elif move_type == MoveGenerator.MoveType.NORMAL_OR_ATTACK:
+				color = Color.ORANGE_RED
+
+			markers[valid_move.get_row()][valid_move.get_col()].set_color(color)
+			markers[valid_move.get_row()][valid_move.get_col()].visible = true
+
+#	for r in range(0, $"/root/Constants".BOARD_WIDTH_IN_TILES):
+#		for c in range(0, $"/root/Constants".BOARD_HEIGHT_IN_TILES):
+#			board[r].append(null)
+#			var tileMarker = TileMarker.instantiate()
+#			tileMarker.position.x = c * $"/root/Constants".TILE_WIDTH
+#			tileMarker.position.y = r * $"/root/Constants".TILE_HEIGHT
+#			tileMarker.visible = false
+#			$Markers.add_child(tileMarker)
+#			markers[r].append(tileMarker)
+
 func handle_click(boundingRectangle, pos):
 
 	#if not board_enabled:
 	#	return False
+
+	var markers_moves = null
 
 	var tile_w = boundingRectangle.size.x / get_width()
 	var tile_h = boundingRectangle.size.y / get_height()
@@ -194,6 +240,10 @@ func handle_click(boundingRectangle, pos):
 			selected_piece = new_selected_piece
 		else:
 			print("Must select king when in check")
+			
+		markers_moves = move_generator.get_valid_moves(selected_piece, selected_tile, self, false)
+	
+	update_markers(markers_moves)
 
 func set_coord(coord, piece):
 	board[coord.get_col()][coord.get_row()] = piece

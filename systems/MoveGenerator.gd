@@ -134,24 +134,17 @@ func determinePossibleBishopMoves(piece, location, board, includeAllAttacks, pos
 func determinePossibleKnightMoves(piece, location, board, includeAllAttacks, possible_moves):
 	var cardinal_directions = [Direction.RANK_UP, Direction.RANK_DOWN, Direction.FILE_UP, Direction.FILE_DOWN]
 
-	var i = 0
-	var j = 3
-
-	while i < 2:
-		var twoInRank = location.get_in_direction(cardinal_directions[i]).get_in_direction(cardinal_directions[i])
-		while j > 1:
-			var oneInFile = twoInRank.get_in_direction(cardinal_directions[j])
+	for r in cardinal_directions.slice(0, 2):
+		var twoInRank = location.get_in_direction(r).get_in_direction(r)
+		for f in cardinal_directions.slice(2, 4):
+			var oneInFile = twoInRank.get_in_direction(f)
 			addNormalOrAttackMove(board, oneInFile, possible_moves)
-			j = j - 1
-		i = i + 1
 
-	while i < 4:
-		var twoInFile = location.get_in_direction(cardinal_directions[i]).get_in_direction(cardinal_directions[i])
-		while j >= 0:
-			var oneInRank = twoInFile.get_in_direction(cardinal_directions[j])
+	for r in cardinal_directions.slice(2, 4):
+		var twoInFile = location.get_in_direction(r).get_in_direction(r)
+		for f in cardinal_directions.slice(0, 2):
+			var oneInRank = twoInFile.get_in_direction(f)
 			addNormalOrAttackMove(board, oneInRank, possible_moves)
-			j = j - 1
-		i = i + 1
 
 func get_valid_moves(piece, location, board, includeAllAttacks):
 	var possible_moves = []
