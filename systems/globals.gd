@@ -1,6 +1,6 @@
 extends Node
 
-var Piece = load("res://entities/piece.gd")
+# var Piece = load("res://entities/piece.gd")
 var PieceManager = preload("res://systems/PieceManager.gd")
 
 enum PieceType { PAWN = 0, KNIGHT = 1, BISHOP = 2, ROOK = 3, QUEEN = 4, KING = 5 }
@@ -18,26 +18,28 @@ enum Direction {
 	RANK_DOWN_FILE_UP
 }
 
-func piece_from_fen_string(string):
-	var toReturn = null
+func piece_info_from_fen_string(string):
+	var toReturn = []
 	if string.to_lower() == 'p':
-		toReturn = Piece.new($"/root/Globals".PieceType.PAWN, $"/root/Globals".PieceColor.BLACK)
+		toReturn.append($"/root/Globals".PieceType.PAWN)
 	elif string.to_lower() == 'n':
-		toReturn = Piece.new($"/root/Globals".PieceType.KNIGHT, $"/root/Globals".PieceColor.BLACK)
+		toReturn.append($"/root/Globals".PieceType.KNIGHT)
 	elif string.to_lower() == 'b':
-		toReturn = Piece.new($"/root/Globals".PieceType.BISHOP, $"/root/Globals".PieceColor.BLACK)
+		toReturn.append($"/root/Globals".PieceType.BISHOP)
 	elif string.to_lower() == 'r':
-		toReturn = Piece.new($"/root/Globals".PieceType.ROOK, $"/root/Globals".PieceColor.BLACK)
+		toReturn.append($"/root/Globals".PieceType.ROOK)
 	elif string.to_lower() == 'q':
-		toReturn = Piece.new($"/root/Globals".PieceType.QUEEN, $"/root/Globals".PieceColor.BLACK)
+		toReturn.append($"/root/Globals".PieceType.QUEEN)
 	elif string.to_lower() == 'k':
-		toReturn = Piece.new($"/root/Globals".PieceType.KING, $"/root/Globals".PieceColor.BLACK)
+		toReturn.append($"/root/Globals".PieceType.KING)
 	else:
 		assert("Invalid piece string")
 
-	get_node("Sprite2D").texture = PieceManager.new().get_texture(string)
-
 	if string == string.to_upper():
-		toReturn.color = $"/root/Globals".PieceColor.WHITE
+		toReturn.append($"/root/Globals".PieceColor.WHITE)
+	else:
+		toReturn.append($"/root/Globals".PieceColor.BLACK)
+		
+	toReturn.append(PieceManager.new().get_texture(string))
 
 	return toReturn

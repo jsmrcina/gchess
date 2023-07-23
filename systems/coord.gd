@@ -36,7 +36,6 @@ func get_file() -> String:
 	return file
 
 func get_col() -> int:
-	print(file + " " + str(file.unicode_at(0)))
 	var file_as_col = file.unicode_at(0) - 65
 	return file_as_col
 

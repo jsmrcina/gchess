@@ -8,7 +8,7 @@ var half_moves : int = 0
 var full_moves : int = 1
 
 var Coord = load("res://systems/coord.gd")
-var Piece = preload("res://entities/tile.tscn")
+var Piece = preload("res://entities/piece.tscn")
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -27,8 +27,9 @@ func _process(delta):
 	pass
 
 func set_coord(coord, piece):
-	print(str(coord.get_col()) + " " + str(coord.get_row()))
 	board[coord.get_col()][coord.get_row()] = piece
+	# 64 is the width of the tiles, 6 is the offset to make the piece centered
+	piece.position = Vector2((coord.get_col() * 64) + 6, (coord.get_row() * 64) + 6)
 
 func get_coord(coord):
 	return board[coord.get_col()][coord.get_row()]
@@ -52,7 +53,11 @@ func initialize_from_fen(fen):
 					for i in range(0, int(item)):
 						cur_pos = cur_pos.get_in_direction($"/root/Globals".Direction.FILE_UP)
 				else:
-					set_coord(cur_pos, $"/root/Globals".piece_from_fen_string(item))
+					var piece_info = $"/root/Globals".piece_info_from_fen_string(item)
+					var piece = Piece.instantiate()
+					piece.create(piece_info)
+					set_coord(cur_pos, piece)
+					$Tiles.add_child(piece)
 					cur_pos = cur_pos.get_in_direction($"/root/Globals".Direction.FILE_UP)
 			cur_pos = cur_pos.get_in_direction($"/root/Globals".Direction.RANK_DOWN)
 			cur_pos.set_file("A")
