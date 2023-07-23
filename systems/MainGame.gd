@@ -126,7 +126,13 @@ func update_markers(valid_moves):
 			if move_type == MoveGenerator.MoveType.ATTACK:
 				color = Color.RED
 			elif move_type == MoveGenerator.MoveType.NORMAL_OR_ATTACK:
-				color = Color.ORANGE_RED
+				var destination_piece = get_coord(valid_move)
+				if destination_piece != null:
+					if destination_piece.get_color() == get_opposite_color(player_turn):
+						color = Color.ORANGE_RED
+					else:
+						# This is our own piece, we can't move here
+						continue
 
 			markers[valid_move.get_row()][valid_move.get_col()].set_color(color)
 			markers[valid_move.get_row()][valid_move.get_col()].visible = true
