@@ -192,7 +192,7 @@ layout_mode = 3
 anchors_preset = 0
 offset_left = 600.0
 offset_top = 50.0
-offset_right = 800.0
+offset_right = 1000.0
 offset_bottom = 594.0
 
 [node name="MoveList" type="ItemList" parent="MoveControl"]
@@ -202,8 +202,17 @@ offset_bottom = 544.0
 focus_mode = 0
 allow_search = false
 
+[node name="Button" type="Button" parent="MoveControl"]
+layout_mode = 0
+offset_left = 250.0
+offset_right = 400.0
+offset_bottom = 32.0
+text = "New Game"
+
 [node name="PieceManager" type="Node" parent="."]
 script = ExtResource("3_bjd1x")
 
 [node name="MoveGenerator" type="Node" parent="."]
 script = ExtResource("5_68qmr")
+
+[connection signal="pressed" from="MoveControl/Button" to="." method="_on_new_game_button_pressed"]

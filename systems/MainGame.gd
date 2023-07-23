@@ -60,6 +60,15 @@ func _process(delta):
 		if bounding_rectangle.has_point(position):
 			handle_click(bounding_rectangle, position)
 
+func start_game():
+	player_turn = $"/root/Globals".PieceColor.WHITE
+	reset_half_moves()
+	reset_full_moves()
+	reset_markers()
+	reset_in_check()
+	reset_castling_permission()
+	reset_move_list()
+
 func is_game_over():
 	return false
 
@@ -117,10 +126,25 @@ func flip_turn():
 func reset_half_moves():
 	half_moves = 0
 
-func update_markers(valid_moves):
+func reset_full_moves():
+	full_moves = 1
+
+func reset_markers():
 	for row in markers:
 		for marker in row:
 			marker.visible = false
+			
+func reset_in_check():
+	in_check = [false, false]
+	
+func reset_castling_permission():
+	castling_permission = [true, true, true, true]
+	
+func reset_move_list():
+	$MoveControl/MoveList.clear()
+
+func update_markers(valid_moves):
+	reset_markers()
 	
 	if selected_tile != null:
 		markers[selected_tile.get_row()][selected_tile.get_col()].set_color(Color.BLUE)
@@ -317,6 +341,12 @@ func get_king_by_color(color):
 
 	return null
 
+func create_piece_from_info(position, info):
+	var piece = Piece.instantiate()
+	piece.create(info)
+	set_coord(position, piece)
+	$Board/Tiles.add_child(piece)
+
 func initialize_from_fen(fen):
 		# First, split into the fields
 		var fields = fen.split(" ")
@@ -336,10 +366,7 @@ func initialize_from_fen(fen):
 						cur_pos = cur_pos.get_in_direction($"/root/Globals".Direction.FILE_UP)
 				else:
 					var piece_info = $"/root/Globals".piece_info_from_fen_string(item)
-					var piece = Piece.instantiate()
-					piece.create(piece_info)
-					set_coord(cur_pos, piece)
-					$Board/Tiles.add_child(piece)
+					create_piece_from_info(cur_pos, piece_info)
 					cur_pos = cur_pos.get_in_direction($"/root/Globals".Direction.FILE_UP)
 			cur_pos = cur_pos.get_in_direction($"/root/Globals".Direction.RANK_DOWN)
 			cur_pos.set_file("A")
@@ -374,3 +401,44 @@ func initialize_from_fen(fen):
 		full_moves = int(fields[5])
 
 		# start_game()
+
+func reset_pieces():
+	var d_piece_type = "q"
+	var e_piece_type = "k"
+
+	for c in range(1, get_width() + 1):
+		for r in range(get_height(), 0, -1):
+			var piece_coord = Coord.new(r, Coord.file_from_col(c - 1))
+			var piece_at_coord = get_coord(piece_coord)
+			if piece_at_coord != null:
+				piece_at_coord.queue_free()
+				set_coord(piece_coord, null)
+
+	for col in range(0, 8):
+		create_piece_from_info(Coord.new(2, Coord.file_from_col(col)), $"/root/Globals".piece_info_from_fen_string("P"))
+		create_piece_from_info(Coord.new(7, Coord.file_from_col(col)), $"/root/Globals".piece_info_from_fen_string("p"))
+
+	var row = 8
+	create_piece_from_info(Coord.new(row, 'A'), $"/root/Globals".piece_info_from_fen_string("r"))
+	create_piece_from_info(Coord.new(row, 'B'), $"/root/Globals".piece_info_from_fen_string("n"))
+	create_piece_from_info(Coord.new(row, 'C'), $"/root/Globals".piece_info_from_fen_string("b"))
+	create_piece_from_info(Coord.new(row, 'D'), $"/root/Globals".piece_info_from_fen_string("q"))
+	create_piece_from_info(Coord.new(row, 'E'), $"/root/Globals".piece_info_from_fen_string("k"))
+	create_piece_from_info(Coord.new(row, 'F'), $"/root/Globals".piece_info_from_fen_string("b"))
+	create_piece_from_info(Coord.new(row, 'G'), $"/root/Globals".piece_info_from_fen_string("n"))
+	create_piece_from_info(Coord.new(row, 'H'), $"/root/Globals".piece_info_from_fen_string("r"))
+	
+	row = 1
+	create_piece_from_info(Coord.new(row, 'A'), $"/root/Globals".piece_info_from_fen_string("R"))
+	create_piece_from_info(Coord.new(row, 'B'), $"/root/Globals".piece_info_from_fen_string("N"))
+	create_piece_from_info(Coord.new(row, 'C'), $"/root/Globals".piece_info_from_fen_string("B"))
+	create_piece_from_info(Coord.new(row, 'D'), $"/root/Globals".piece_info_from_fen_string("Q"))
+	create_piece_from_info(Coord.new(row, 'E'), $"/root/Globals".piece_info_from_fen_string("K"))
+	create_piece_from_info(Coord.new(row, 'F'), $"/root/Globals".piece_info_from_fen_string("B"))
+	create_piece_from_info(Coord.new(row, 'G'), $"/root/Globals".piece_info_from_fen_string("N"))
+	create_piece_from_info(Coord.new(row, 'H'), $"/root/Globals".piece_info_from_fen_string("R"))
+	
+	start_game()
+
+func _on_new_game_button_pressed():
+	reset_pieces()

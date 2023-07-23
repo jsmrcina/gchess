@@ -24,11 +24,6 @@ func get_rank() -> int:
 func get_row() -> int:
 	return Constants.BOARD_HEIGHT_IN_TILES - rank
 
-#	@classmethod
-#	def get_file_generator(cls):
-#		for c in range(ord('A'), ord('H') + 1):
-#			yield chr(c)
-
 static func file_from_col(col) -> String:
 	return char(col + 65)
 
