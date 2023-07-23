@@ -1,20 +1,27 @@
 extends Node2D
 
+var Coord = load("res://systems/coord.gd")
+var Piece = preload("res://entities/piece.tscn")
+var MoveGenerator = load("res://systems/MoveGenerator.gd")
+
+var board_enabled : bool = true
 var board : Array = []
 var player_turn
 var in_check : Array[bool] = [false, false]
 var castling_permission : Array[bool] = [true, true, true, true]
 var half_moves : int = 0
 var full_moves : int = 1
-
-var Coord = load("res://systems/coord.gd")
-var Piece = preload("res://entities/piece.tscn")
+var move_generator
+var selected_tile
+var selected_piece
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	for r in range(0, $"/root/Constants".BOARD_WIDTH):
+	move_generator = MoveGenerator.new()
+	
+	for r in range(0, $"/root/Constants".BOARD_WIDTH_IN_TILES):
 		board.append([])
-		for c in range(0, $"/root/Constants".BOARD_HEIGHT):
+		for c in range(0, $"/root/Constants".BOARD_HEIGHT_IN_TILES):
 			board[r].append(null)
 	
 	player_turn = $"/root/Globals".PieceColor.WHITE
@@ -24,15 +31,203 @@ func _ready():
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
-	pass
+	if Input.is_action_just_pressed("click"):
+		
+		var position = get_viewport().get_mouse_position()
+		
+		# Check to see if the click is within the board
+		var pixel_board_width = $"/root/Constants".TILE_WIDTH * $"/root/Constants".BOARD_WIDTH_IN_TILES
+		var pixel_board_height = $"/root/Constants".TILE_HEIGHT * $"/root/Constants".BOARD_HEIGHT_IN_TILES
+		
+		var bounding_rectangle = Rect2($Tiles.position.x, $Tiles.position.y, pixel_board_width, pixel_board_height)
+		if bounding_rectangle.has_point(position):
+			handle_click(bounding_rectangle, position)
+
+func is_game_over():
+	return false
+
+func get_width():
+	return $"/root/Constants".BOARD_WIDTH_IN_TILES
+
+func get_height():
+	return $"/root/Constants".BOARD_HEIGHT_IN_TILES
+
+func get_tile(i, j):
+	return board[i][j]
+
+func get_turn():
+	return player_turn
+	
+func get_opposite_color(color):
+	if color == $"/root/Globals".PieceColor.WHITE:
+		return $"/root/Globals".PieceColor.BLACK
+	else:
+		return $"/root/Globals".PieceColor.WHITE
+
+func update_incheck():
+	in_check[$"/root/Globals".PieceColor.WHITE] = false
+	in_check[$"/root/Globals".PieceColor.BLACK] = false
+
+	var attacked_locations = move_generator.determineAllAttackedSquares(self, player_turn)
+	for item in attacked_locations:
+		var move_type = item[0]
+		var attacked_square = item[1]
+		var piece_at_attacked_location = get_coord(attacked_square)
+		if piece_at_attacked_location != null:
+			if piece_at_attacked_location.get_type() == $"/root/Globals".PieceType.KING and piece_at_attacked_location.get_color() == $"/root/Globals".Piece.get_opposite_color(
+					player_turn):
+				in_check[$"/root/Globals".get_opposite_color(player_turn)] = true
+
+func flip_turn():
+	if is_game_over():
+		# Two conditions make a check-mate:
+		# 1) The king cannot move
+		# 2) There is no piece that can be put between the king to make it not in check
+
+		board_enabled = false
+
+	if player_turn == $"/root/Globals".PieceColor.WHITE:
+		player_turn = $"/root/Globals".PieceColor.BLACK
+	else:
+		full_moves = full_moves + 1
+		player_turn = $"/root/Globals".PieceColor.WHITE
+
+	half_moves = half_moves + 1
+
+func reset_half_moves():
+	half_moves = 0
+
+func handle_click(boundingRectangle, pos):
+
+	#if not board_enabled:
+	#	return False
+
+	var tile_w = boundingRectangle.size.x / get_width()
+	var tile_h = boundingRectangle.size.y / get_height()
+
+	var tile_x = (int)((pos.x - boundingRectangle.position.x) / tile_w)
+	var tile_y = (int)((pos.y - boundingRectangle.position.y) / tile_h)
+
+	var new_selected_coord = Coord.new(get_height() - tile_y, Coord.file_from_col(tile_x))
+	var new_selected_piece = get_coord(new_selected_coord)
+	
+	print(str(new_selected_coord) + " " + str(new_selected_piece))
+
+	if new_selected_coord.equal(selected_tile):
+		selected_tile = null
+		selected_piece = null
+	elif selected_tile != null:
+		# Check to see if the location is a valid move
+		var valid_moves = move_generator.get_valid_moves(selected_piece, selected_tile, self, false)
+
+		for item in valid_moves:
+			# (move_type, valid_move) 
+			var move_type = item[0]
+			var valid_move = item[1] 
+			var found_dest = false
+
+			if valid_move.equal(new_selected_coord):
+				var valid_move_destination_piece = get_coord(new_selected_coord)
+
+				# Before we make the move, we need to check it won't place our king in check
+				# Pretend the piece we're about to move is gone
+				set_coord(selected_tile, null)
+
+				var puts_king_in_check = false
+				var current_king = get_king_by_color(player_turn)
+				var attacked_locations = move_generator.determineAllAttackedSquares(self, get_opposite_color(player_turn))
+				for item2 in attacked_locations:
+					var move = item2[1]
+					if move == current_king[0]:
+						print("Cannot move " + str(selected_piece) + " as it would place your king in check")
+						puts_king_in_check = true
+
+				set_coord(selected_tile, selected_piece)
+
+				if puts_king_in_check:
+					selected_piece = null
+					selected_tile = null
+				else:
+					if valid_move_destination_piece != null:
+						if move_type == MoveGenerator.MoveType.ATTACK:
+							# Take the piece
+							set_coord(selected_tile, null)
+							set_coord(new_selected_coord, selected_piece)
+							selected_tile = null
+							selected_piece = null
+							update_incheck()
+							reset_half_moves()
+							flip_turn()
+							found_dest = true
+						elif move_type == MoveGenerator.MoveType.NORMAL_OR_ATTACK and get_opposite_color(
+								selected_piece.get_color()) == valid_move_destination_piece.get_color():
+							set_coord(selected_tile, null)
+							set_coord(new_selected_coord, selected_piece)
+							selected_tile = null
+							selected_piece = null
+							update_incheck()
+							reset_half_moves()
+							flip_turn()
+							found_dest = true
+					else:
+						set_coord(selected_tile, null)
+						set_coord(new_selected_coord, selected_piece)
+
+						if selected_piece.get_type() == $"/root/Globals".PieceType.PAWN:
+							reset_half_moves()
+
+						selected_tile = null
+						selected_piece = null
+						update_incheck()
+						flip_turn()
+						found_dest = true
+
+				if found_dest:
+					break
+	elif new_selected_piece != null and new_selected_piece.get_color() == player_turn:
+		# If you're in check, you can only select your king to move
+		if in_check[player_turn] and new_selected_piece.get_type() == $"root/Globals".PieceType.KING:
+			selected_tile = new_selected_coord
+			selected_piece = new_selected_piece
+		elif not in_check[player_turn]:
+			selected_tile = new_selected_coord
+			selected_piece = new_selected_piece
+		else:
+			print("Must select king when in check")
 
 func set_coord(coord, piece):
 	board[coord.get_col()][coord.get_row()] = piece
 	# 64 is the width of the tiles, 6 is the offset to make the piece centered
-	piece.position = Vector2((coord.get_col() * 64) + 6, (coord.get_row() * 64) + 6)
+	
+	if piece != null:
+		piece.position = Vector2((coord.get_col() * $"/root/Constants".TILE_WIDTH) + 6, (coord.get_row() * $"/root/Constants".TILE_HEIGHT) + 6)
 
 func get_coord(coord):
 	return board[coord.get_col()][coord.get_row()]
+
+func get_pieces_by_color(color):
+	var pieces = []
+
+	for c in range(1, get_width() + 1):
+		for r in range(get_height(), 0, -1):
+			var piece_coord = Coord.new(r, Coord.file_from_col(c - 1))
+			var piece_at_coord = get_coord(piece_coord)
+			if piece_at_coord != null:
+				if piece_at_coord.get_color() == color:
+					pieces.append([piece_coord, piece_at_coord])
+
+	return pieces
+
+func get_king_by_color(color):
+	for c in range(1, get_width() + 1):
+		for r in range(get_height(), 0, -1):
+			var piece_coord = Coord.new(r, Coord.file_from_col(c - 1))
+			var piece_at_coord = get_coord(piece_coord)
+			if piece_at_coord != null:
+				if piece_at_coord.get_color() == color and piece_at_coord.get_type() == $"/root/Globals".PieceType.KING:
+					return [piece_coord, piece_at_coord]
+
+	return null
 
 func initialize_from_fen(fen):
 		# First, split into the fields

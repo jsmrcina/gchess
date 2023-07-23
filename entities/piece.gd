@@ -28,13 +28,6 @@ func create(info):
 func get_color():
 	return color
 
-
-static func get_opposite_color(color):
-	if color == PieceColor.WHITE:
-		return PieceColor.BLACK
-	else:
-		return PieceColor.WHITE
-
 func get_type():
 	return type
 
@@ -43,6 +36,29 @@ func get_direction():
 
 func get_starting_row_position():
 	return starting_row_position
+
+func to_fen_string():
+
+	var toReturn = null
+	if self.get_type() == PieceType.PAWN:
+		toReturn = 'p'
+	elif self.get_type() == PieceType.KNIGHT:
+		toReturn = 'n'
+	elif self.get_type() == PieceType.BISHOP:
+		toReturn = 'b'
+	elif self.get_type() == PieceType.ROOK:
+		toReturn = 'r'
+	elif self.get_type() == PieceType.QUEEN:
+		toReturn = 'q'
+	elif self.get_type() == PieceType.KING:
+		toReturn = 'k'
+	else:
+		assert(false)
+
+	if self.get_color() == PieceColor.BLACK:
+		return toReturn
+
+	return toReturn.to_upper()
 
 func isOppositeColor(other):
 	if other == null:
@@ -61,6 +77,9 @@ func isSameColor(other):
 		return true
 
 	return false
+
+func _to_string():
+	return to_fen_string()
 
 # Called when the node enters the scene tree for the first time.
 func _ready():

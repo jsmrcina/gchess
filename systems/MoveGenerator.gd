@@ -77,15 +77,15 @@ func addMovesInDirection(piece, board, location, direction, possible_moves):
 			running = false
 
 
-static func determineAllAttackedSquares(cls, board, color):
+static func determineAllAttackedSquares(board, color):
 	var pieces = board.get_pieces_by_color(color)
 	var allPossibleMovesByColor = []
 	for item in pieces:
-		allPossibleMovesByColor.extend(board.move_generator.get_valid_moves(item[1], item[0], board, true))
+		allPossibleMovesByColor += board.move_generator.get_valid_moves(item[1], item[0], board, true)
 
 	var allAttackMovesByColor = []
 	for item in allPossibleMovesByColor:
-		if piece.get_type() == MoveType.ATTACK or piece.get_type() == MoveType.NORMAL_OR_ATTACK:
+		if item[0] == MoveType.ATTACK or item[0] == MoveType.NORMAL_OR_ATTACK:
 			allAttackMovesByColor.append([item[0], item[1]])
 
 	return allAttackMovesByColor
@@ -110,14 +110,16 @@ func determinePossiblePawnMoves(piece, location, board, includeAllAttacks, possi
 func determinePossibleKingMoves(piece, location, board, includeAllAttacks, possible_moves):
 	var attacked_locations = []
 	if piece.get_color() == board.get_turn():
-		attacked_locations = determineAllAttackedSquares(board, Piece.get_opposite_color(piece.get_color()))
+		attacked_locations = determineAllAttackedSquares(board,  board.get_opposite_color(piece.get_color()))
 
 	for d in Direction:
-		addNormalOrAttackMoveIfNotAttacked(board, location.get_in_direction(d), possible_moves, attacked_locations)
+		var d_as_int = Direction[d]
+		addNormalOrAttackMoveIfNotAttacked(board, location.get_in_direction(d_as_int), possible_moves, attacked_locations)
 
 func determinePossibleQueenMoves(piece, location, board, includeAllAttacks, possible_moves):
 	for d in Direction:
-		addMovesInDirection(piece, board, location, d, possible_moves)
+		var d_as_int = Direction[d]
+		addMovesInDirection(piece, board, location, d_as_int, possible_moves)
 
 func determinePossibleRookMoves(piece, location, board, includeAllAttacks, possible_moves):
 	var cardinal_directions = [Direction.RANK_UP, Direction.RANK_DOWN, Direction.FILE_UP, Direction.FILE_DOWN]
@@ -136,17 +138,17 @@ func determinePossibleKnightMoves(piece, location, board, includeAllAttacks, pos
 	var j = 3
 
 	while i < 2:
-		var twoInRank = location.get_in_direction(d).get_in_direction(d)
+		var twoInRank = location.get_in_direction(cardinal_directions[i]).get_in_direction(cardinal_directions[i])
 		while j > 1:
-			var oneInFile = twoInRank.get_in_direction(d)
+			var oneInFile = twoInRank.get_in_direction(cardinal_directions[j])
 			addNormalOrAttackMove(board, oneInFile, possible_moves)
 			j = j - 1
 		i = i + 1
 
 	while i < 4:
-		var twoInFile = location.get_in_direction(d).get_in_direction(d)
+		var twoInFile = location.get_in_direction(cardinal_directions[i]).get_in_direction(cardinal_directions[i])
 		while j >= 0:
-			var oneInRank = twoInFile.get_in_direction(d)
+			var oneInRank = twoInFile.get_in_direction(cardinal_directions[j])
 			addNormalOrAttackMove(board, oneInRank, possible_moves)
 			j = j - 1
 		i = i + 1

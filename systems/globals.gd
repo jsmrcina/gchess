@@ -8,14 +8,14 @@ enum PieceType { PAWN = 0, KNIGHT = 1, BISHOP = 2, ROOK = 3, QUEEN = 4, KING = 5
 enum PieceColor { BLACK, WHITE }
 
 enum Direction {
-	RANK_UP,
-	RANK_DOWN,
-	FILE_UP,
-	FILE_DOWN,
-	RANK_UP_FILE_UP,
-	RANK_DOWN_FILE_DOWN,
-	RANK_UP_FILE_DOWN,
-	RANK_DOWN_FILE_UP
+	RANK_UP = 0,
+	RANK_DOWN = 1,
+	FILE_UP = 2,
+	FILE_DOWN = 3,
+	RANK_UP_FILE_UP = 4,
+	RANK_DOWN_FILE_DOWN = 5,
+	RANK_UP_FILE_DOWN = 6,
+	RANK_DOWN_FILE_UP = 7
 }
 
 func piece_info_from_fen_string(string):

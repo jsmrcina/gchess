@@ -22,7 +22,7 @@ func get_rank() -> int:
 	return rank
 
 func get_row() -> int:
-	return Constants.BOARD_HEIGHT - rank
+	return Constants.BOARD_HEIGHT_IN_TILES - rank
 
 #	@classmethod
 #	def get_file_generator(cls):
@@ -78,7 +78,7 @@ func is_on_board():
 
 	return true
 
-func __eq__(other):
+func equal(other):
 	if other == null:
 		return false
 
@@ -87,5 +87,5 @@ func __eq__(other):
 	else:
 		return false
 
-func __str__():
+func _to_string():
 	return str(get_rank()) + " " + str(get_file())
