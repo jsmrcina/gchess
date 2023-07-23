@@ -131,16 +131,6 @@ func update_markers(valid_moves):
 			markers[valid_move.get_row()][valid_move.get_col()].set_color(color)
 			markers[valid_move.get_row()][valid_move.get_col()].visible = true
 
-#	for r in range(0, $"/root/Constants".BOARD_WIDTH_IN_TILES):
-#		for c in range(0, $"/root/Constants".BOARD_HEIGHT_IN_TILES):
-#			board[r].append(null)
-#			var tileMarker = TileMarker.instantiate()
-#			tileMarker.position.x = c * $"/root/Constants".TILE_WIDTH
-#			tileMarker.position.y = r * $"/root/Constants".TILE_HEIGHT
-#			tileMarker.visible = false
-#			$Markers.add_child(tileMarker)
-#			markers[r].append(tileMarker)
-
 func handle_click(boundingRectangle, pos):
 
 	#if not board_enabled:
@@ -167,26 +157,28 @@ func handle_click(boundingRectangle, pos):
 		var valid_moves = move_generator.get_valid_moves(selected_piece, selected_tile, self, false)
 
 		for item in valid_moves:
-			# (move_type, valid_move) 
 			var move_type = item[0]
 			var valid_move = item[1] 
 			var found_dest = false
 
 			if valid_move.equal(new_selected_coord):
 				var valid_move_destination_piece = get_coord(new_selected_coord)
-
+				
 				# Before we make the move, we need to check it won't place our king in check
-				# Pretend the piece we're about to move is gone
+				# Pretend the piece we're about to move is gone. Only do this check if we're not
+				# holding the current king in our hand
 				set_coord(selected_tile, null)
-
-				var puts_king_in_check = false
+				
 				var current_king = get_king_by_color(player_turn)
-				var attacked_locations = move_generator.determineAllAttackedSquares(self, get_opposite_color(player_turn))
-				for item2 in attacked_locations:
-					var move = item2[1]
-					if move == current_king[0]:
-						print("Cannot move " + str(selected_piece) + " as it would place your king in check")
-						puts_king_in_check = true
+				
+				var puts_king_in_check = false
+				if current_king != null:
+					var attacked_locations = move_generator.determineAllAttackedSquares(self, get_opposite_color(player_turn))
+					for item2 in attacked_locations:
+						var move = item2[1]
+						if move == current_king[0]:
+							print("Cannot move " + str(selected_piece) + " as it would place your king in check")
+							puts_king_in_check = true
 
 				set_coord(selected_tile, selected_piece)
 
@@ -197,6 +189,7 @@ func handle_click(boundingRectangle, pos):
 					if valid_move_destination_piece != null:
 						if move_type == MoveGenerator.MoveType.ATTACK:
 							# Take the piece
+							take_piece(new_selected_coord)
 							set_coord(selected_tile, null)
 							set_coord(new_selected_coord, selected_piece)
 							selected_tile = null
@@ -207,6 +200,7 @@ func handle_click(boundingRectangle, pos):
 							found_dest = true
 						elif move_type == MoveGenerator.MoveType.NORMAL_OR_ATTACK and get_opposite_color(
 								selected_piece.get_color()) == valid_move_destination_piece.get_color():
+							take_piece(new_selected_coord)
 							set_coord(selected_tile, null)
 							set_coord(new_selected_coord, selected_piece)
 							selected_tile = null
@@ -232,7 +226,7 @@ func handle_click(boundingRectangle, pos):
 					break
 	elif new_selected_piece != null and new_selected_piece.get_color() == player_turn:
 		# If you're in check, you can only select your king to move
-		if in_check[player_turn] and new_selected_piece.get_type() == $"root/Globals".PieceType.KING:
+		if in_check[player_turn] and new_selected_piece.get_type() == $"/root/Globals".PieceType.KING:
 			selected_tile = new_selected_coord
 			selected_piece = new_selected_piece
 		elif not in_check[player_turn]:
@@ -240,20 +234,26 @@ func handle_click(boundingRectangle, pos):
 			selected_piece = new_selected_piece
 		else:
 			print("Must select king when in check")
-			
-		markers_moves = move_generator.get_valid_moves(selected_piece, selected_tile, self, false)
+		
+		if selected_piece != null:
+			markers_moves = move_generator.get_valid_moves(selected_piece, selected_tile, self, false)
 	
 	update_markers(markers_moves)
 
 func set_coord(coord, piece):
-	board[coord.get_col()][coord.get_row()] = piece
+	board[coord.get_row()][coord.get_col()] = piece
 	# 64 is the width of the tiles, 6 is the offset to make the piece centered
 	
 	if piece != null:
 		piece.position = Vector2((coord.get_col() * $"/root/Constants".TILE_WIDTH) + 6, (coord.get_row() * $"/root/Constants".TILE_HEIGHT) + 6)
 
+func take_piece(coord):
+	var piece = board[coord.get_row()][coord.get_col()]
+	board[coord.get_row()][coord.get_col()] = null
+	piece.visible = false
+
 func get_coord(coord):
-	return board[coord.get_col()][coord.get_row()]
+	return board[coord.get_row()][coord.get_col()]
 
 func get_pieces_by_color(color):
 	var pieces = []
@@ -273,6 +273,7 @@ func get_king_by_color(color):
 		for r in range(get_height(), 0, -1):
 			var piece_coord = Coord.new(r, Coord.file_from_col(c - 1))
 			var piece_at_coord = get_coord(piece_coord)
+			print(str(piece_coord) + " " + str(piece_at_coord))
 			if piece_at_coord != null:
 				if piece_at_coord.get_color() == color and piece_at_coord.get_type() == $"/root/Globals".PieceType.KING:
 					return [piece_coord, piece_at_coord]
@@ -291,7 +292,6 @@ func initialize_from_fen(fen):
 
 		# Parse each row and place pieces
 		var cur_pos = Coord.new(8, "A")
-		print("cur " + str(cur_pos.get_col()) + " " + str(cur_pos.get_row()))
 		for row in rows:
 			for item in row:
 				if item.is_valid_int():
