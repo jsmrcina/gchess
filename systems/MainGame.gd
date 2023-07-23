@@ -19,6 +19,7 @@ var in_check : Array[bool] = [false, false]
 var castling_permission : Array[bool] = [true, true, true, true]
 var half_moves : int = 0
 var full_moves : int = 1
+var last_moved_piece_and_coord : Array = []
 var move_generator
 
 var selected_tile
@@ -68,9 +69,8 @@ func start_game():
 	reset_in_check()
 	reset_castling_permission()
 	reset_move_list()
-
-func is_game_over():
-	return false
+	last_moved_piece_and_coord = []
+	board_enabled = true
 
 func get_width():
 	return $"/root/Constants".BOARD_WIDTH_IN_TILES
@@ -107,21 +107,38 @@ func update_incheck() -> bool:
 
 	return false
 
-func flip_turn():
-	if is_game_over():
-		# Two conditions make a check-mate:
-		# 1) The king cannot move
-		# 2) There is no piece that can be put between the king to make it not in check
-
-		board_enabled = false
-
-	if player_turn == $"/root/Globals".PieceColor.WHITE:
-		player_turn = $"/root/Globals".PieceColor.BLACK
+func add_checkmate_to_move_list():
+	
+	var idx = $MoveControl/MoveList.add_item("#")
+	$MoveControl/MoveList.set_item_disabled(idx, true)
+	
+	if in_check[0]:
+		idx = $MoveControl/MoveList.add_item("1-0")
 	else:
-		full_moves = full_moves + 1
-		player_turn = $"/root/Globals".PieceColor.WHITE
+		idx = $MoveControl/MoveList.add_item("0-1")
+	$MoveControl/MoveList.set_item_disabled(idx, true)
 
-	half_moves = half_moves + 1
+func is_checkmate() -> bool:
+	if !(in_check[0] || in_check[1]):
+		return false
+		
+	# Single check
+	add_checkmate_to_move_list()
+	
+	return true
+	
+
+func flip_turn():
+	if is_checkmate():
+		board_enabled = false
+	else:
+		if player_turn == $"/root/Globals".PieceColor.WHITE:
+			player_turn = $"/root/Globals".PieceColor.BLACK
+		else:
+			full_moves = full_moves + 1
+			player_turn = $"/root/Globals".PieceColor.WHITE
+
+		half_moves = half_moves + 1
 
 func reset_half_moves():
 	half_moves = 0
@@ -192,8 +209,8 @@ func add_move_to_move_list(piece, source, dest, capture, placed_in_check):
 
 func handle_click(boundingRectangle, pos):
 
-	#if not board_enabled:
-	#	return False
+	if not board_enabled:
+		return false
 
 	var markers_moves = null
 
@@ -205,8 +222,6 @@ func handle_click(boundingRectangle, pos):
 
 	var new_selected_coord = Coord.new(get_height() - tile_y, Coord.file_from_col(tile_x))
 	var new_selected_piece = get_coord(new_selected_coord)
-	
-	print(str(new_selected_coord) + " " + str(new_selected_piece))
 
 	if new_selected_coord.equal(selected_tile):
 		selected_tile = null
@@ -215,10 +230,11 @@ func handle_click(boundingRectangle, pos):
 		# Check to see if the location is a valid move
 		var valid_moves = move_generator.get_valid_moves(selected_piece, selected_tile, self, false)
 
+		var found_dest = false
+		
 		for item in valid_moves:
 			var move_type = item[0]
 			var valid_move = item[1] 
-			var found_dest = false
 
 			if valid_move.equal(new_selected_coord):
 				var valid_move_destination_piece = get_coord(new_selected_coord)
@@ -253,6 +269,7 @@ func handle_click(boundingRectangle, pos):
 							set_coord(new_selected_coord, selected_piece)
 							var placed_in_check = update_incheck()
 							add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, true, placed_in_check)
+							last_moved_piece_and_coord = [selected_piece, selected_tile]
 							selected_tile = null
 							selected_piece = null
 							reset_half_moves()
@@ -265,6 +282,7 @@ func handle_click(boundingRectangle, pos):
 							set_coord(new_selected_coord, selected_piece)
 							var placed_in_check = update_incheck()
 							add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, true, placed_in_check)
+							last_moved_piece_and_coord = [selected_piece, selected_tile]
 							selected_tile = null
 							selected_piece = null
 							reset_half_moves()
@@ -279,6 +297,7 @@ func handle_click(boundingRectangle, pos):
 
 						var placed_in_check = update_incheck()
 						add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, false, placed_in_check)
+						last_moved_piece_and_coord = [selected_piece, selected_tile]
 						selected_tile = null
 						selected_piece = null
 						flip_turn()
@@ -286,6 +305,11 @@ func handle_click(boundingRectangle, pos):
 
 				if found_dest:
 					break
+					
+		if !found_dest:
+			# Player selected an invalid destination for this move
+			selected_tile = null
+			selected_piece = null
 	elif new_selected_piece != null and new_selected_piece.get_color() == player_turn:
 		# If you're in check, you can only select your king to move
 		if in_check[player_turn] and new_selected_piece.get_type() == $"/root/Globals".PieceType.KING:
