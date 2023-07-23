@@ -1,5 +1,11 @@
 extends Node2D
 
+# Missing rules
+# Castling
+# En Passant
+# Promotion
+# Checkmate
+
 var Coord = load("res://systems/coord.gd")
 var Piece = preload("res://entities/piece.tscn")
 var TileMarker = preload("res://entities/tile_marker.tscn")
@@ -32,7 +38,7 @@ func _ready():
 			tileMarker.position.x = c * $"/root/Constants".TILE_WIDTH
 			tileMarker.position.y = r * $"/root/Constants".TILE_HEIGHT
 			tileMarker.visible = false
-			$Markers.add_child(tileMarker)
+			$Board/Tiles/Markers.add_child(tileMarker)
 			markers[r].append(tileMarker)
 	
 	player_turn = $"/root/Globals".PieceColor.WHITE
@@ -50,7 +56,7 @@ func _process(delta):
 		var pixel_board_width = $"/root/Constants".TILE_WIDTH * $"/root/Constants".BOARD_WIDTH_IN_TILES
 		var pixel_board_height = $"/root/Constants".TILE_HEIGHT * $"/root/Constants".BOARD_HEIGHT_IN_TILES
 		
-		var bounding_rectangle = Rect2($Board/Tiles.position.x, $Board/Tiles.position.y, pixel_board_width, pixel_board_height)
+		var bounding_rectangle = Rect2($Board/Tiles.global_position.x, $Board/Tiles.global_position.y, pixel_board_width, pixel_board_height)
 		if bounding_rectangle.has_point(position):
 			handle_click(bounding_rectangle, position)
 
@@ -75,7 +81,7 @@ func get_opposite_color(color):
 	else:
 		return $"/root/Globals".PieceColor.WHITE
 
-func update_incheck():
+func update_incheck() -> bool:
 	in_check[$"/root/Globals".PieceColor.WHITE] = false
 	in_check[$"/root/Globals".PieceColor.BLACK] = false
 
@@ -88,6 +94,9 @@ func update_incheck():
 			if piece_at_attacked_location.get_type() == $"/root/Globals".PieceType.KING and piece_at_attacked_location.get_color() == get_opposite_color(
 					player_turn):
 				in_check[get_opposite_color(player_turn)] = true
+				return true
+
+	return false
 
 func flip_turn():
 	if is_game_over():
@@ -136,6 +145,26 @@ func update_markers(valid_moves):
 
 			markers[valid_move.get_row()][valid_move.get_col()].set_color(color)
 			markers[valid_move.get_row()][valid_move.get_col()].visible = true
+
+# Note: Does not do en passant, move disambiguation, or promotion, castling, checkmate, end of game
+# Reference: https://en.wikipedia.org/wiki/Algebraic_notation_(chess)
+func add_move_to_move_list(piece, source, dest, capture, placed_in_check):
+	
+	var final_string = null
+	if capture:
+		var piece_as_string = piece.to_string()
+		if piece_as_string == "":
+			final_string = source.get_file().to_lower() + "x" + dest.to_string()
+		else:
+			final_string = piece_as_string + "x" + dest.to_string()
+	else:
+		final_string = piece.to_string() + dest.to_string()
+		
+	if placed_in_check:
+		final_string += "+"
+
+	var idx = $MoveControl/MoveList.add_item(final_string)
+	$MoveControl/MoveList.set_item_disabled(idx, true)
 
 func handle_click(boundingRectangle, pos):
 
@@ -198,9 +227,10 @@ func handle_click(boundingRectangle, pos):
 							take_piece(new_selected_coord)
 							set_coord(selected_tile, null)
 							set_coord(new_selected_coord, selected_piece)
+							var placed_in_check = update_incheck()
+							add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, true, placed_in_check)
 							selected_tile = null
 							selected_piece = null
-							update_incheck()
 							reset_half_moves()
 							flip_turn()
 							found_dest = true
@@ -209,22 +239,24 @@ func handle_click(boundingRectangle, pos):
 							take_piece(new_selected_coord)
 							set_coord(selected_tile, null)
 							set_coord(new_selected_coord, selected_piece)
+							var placed_in_check = update_incheck()
+							add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, true, placed_in_check)
 							selected_tile = null
 							selected_piece = null
-							update_incheck()
 							reset_half_moves()
 							flip_turn()
 							found_dest = true
 					else:
 						set_coord(selected_tile, null)
 						set_coord(new_selected_coord, selected_piece)
-
+						
 						if selected_piece.get_type() == $"/root/Globals".PieceType.PAWN:
 							reset_half_moves()
 
+						var placed_in_check = update_incheck()
+						add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, false, placed_in_check)
 						selected_tile = null
 						selected_piece = null
-						update_incheck()
 						flip_turn()
 						found_dest = true
 
@@ -279,7 +311,6 @@ func get_king_by_color(color):
 		for r in range(get_height(), 0, -1):
 			var piece_coord = Coord.new(r, Coord.file_from_col(c - 1))
 			var piece_at_coord = get_coord(piece_coord)
-			print(str(piece_coord) + " " + str(piece_at_coord))
 			if piece_at_coord != null:
 				if piece_at_coord.get_color() == color and piece_at_coord.get_type() == $"/root/Globals".PieceType.KING:
 					return [piece_coord, piece_at_coord]

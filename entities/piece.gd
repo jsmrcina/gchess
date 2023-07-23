@@ -37,21 +37,21 @@ func get_direction():
 func get_starting_row_position():
 	return starting_row_position
 
-func to_fen_string():
+func to_san_string():
 
 	var toReturn = null
 	if self.get_type() == PieceType.PAWN:
-		toReturn = 'p'
+		toReturn = ''
 	elif self.get_type() == PieceType.KNIGHT:
-		toReturn = 'n'
+		toReturn = 'N'
 	elif self.get_type() == PieceType.BISHOP:
-		toReturn = 'b'
+		toReturn = 'B'
 	elif self.get_type() == PieceType.ROOK:
-		toReturn = 'r'
+		toReturn = 'R'
 	elif self.get_type() == PieceType.QUEEN:
-		toReturn = 'q'
+		toReturn = 'Q'
 	elif self.get_type() == PieceType.KING:
-		toReturn = 'k'
+		toReturn = 'K'
 	else:
 		assert(false)
 
@@ -79,7 +79,7 @@ func isSameColor(other):
 	return false
 
 func _to_string():
-	return to_fen_string()
+	return to_san_string()
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
