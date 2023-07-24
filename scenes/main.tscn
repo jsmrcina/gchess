@@ -187,7 +187,7 @@ position = Vector2(50, 50)
 
 [node name="Tile" parent="Board/Tiles" instance=ExtResource("2_yaddp")]
 
-[node name="MoveControl" type="Control" parent="."]
+[node name="UI" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 0
 offset_left = 600.0
@@ -195,19 +195,63 @@ offset_top = 50.0
 offset_right = 1000.0
 offset_bottom = 594.0
 
-[node name="MoveList" type="ItemList" parent="MoveControl"]
+[node name="MoveList" type="ItemList" parent="UI"]
 layout_mode = 0
 offset_right = 200.0
 offset_bottom = 544.0
 focus_mode = 0
 allow_search = false
 
-[node name="Button" type="Button" parent="MoveControl"]
+[node name="Button" type="Button" parent="UI"]
 layout_mode = 0
 offset_left = 250.0
 offset_right = 400.0
 offset_bottom = 32.0
 text = "New Game"
+
+[node name="Clock" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="WhiteClock" type="Label" parent="UI/Clock"]
+layout_mode = 0
+offset_left = 250.0
+offset_top = 500.0
+offset_right = 325.0
+offset_bottom = 540.0
+text = "10:00"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="WhiteLabel" type="Label" parent="UI/Clock"]
+layout_mode = 0
+offset_left = 250.0
+offset_top = 475.0
+offset_right = 325.0
+offset_bottom = 515.0
+text = "White"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BlackClock" type="Label" parent="UI/Clock"]
+layout_mode = 0
+offset_left = 325.0
+offset_top = 500.0
+offset_right = 400.0
+offset_bottom = 540.0
+text = "10:00"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BlackLabel" type="Label" parent="UI/Clock"]
+layout_mode = 0
+offset_left = 325.0
+offset_top = 475.0
+offset_right = 400.0
+offset_bottom = 515.0
+text = "Black"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="PieceManager" type="Node" parent="."]
 script = ExtResource("3_bjd1x")
@@ -215,4 +259,4 @@ script = ExtResource("3_bjd1x")
 [node name="MoveGenerator" type="Node" parent="."]
 script = ExtResource("5_68qmr")
 
-[connection signal="pressed" from="MoveControl/Button" to="." method="_on_new_game_button_pressed"]
+[connection signal="pressed" from="UI/Button" to="." method="_on_new_game_button_pressed"]

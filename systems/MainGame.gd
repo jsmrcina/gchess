@@ -21,6 +21,8 @@ var half_moves : int = 0
 var full_moves : int = 1
 var last_moved_piece_and_coord : Array = []
 var move_generator
+var start_turn_time : int = -1
+var clock_times : Array[int] = [60 * 10, 60 * 10]
 
 var selected_tile
 var selected_piece
@@ -43,6 +45,8 @@ func _ready():
 			markers[r].append(tileMarker)
 	
 	player_turn = $"/root/Globals".PieceColor.WHITE
+	update_clock( $"/root/Globals".PieceColor.WHITE, false)
+	update_clock( $"/root/Globals".PieceColor.BLACK, false)
 	
 	initialize_from_fen("rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2")
 
@@ -60,6 +64,13 @@ func _process(delta):
 		var bounding_rectangle = Rect2($Board/Tiles.global_position.x, $Board/Tiles.global_position.y, pixel_board_width, pixel_board_height)
 		if bounding_rectangle.has_point(position):
 			handle_click(bounding_rectangle, position)
+
+	if board_enabled:
+		var ran_out_of_time = update_clock(player_turn, false)
+		if ran_out_of_time:
+			board_enabled = false
+			# If we run out of time, the other player wins
+			add_score_to_move_list(get_opposite_color(player_turn))
 
 func start_game():
 	player_turn = $"/root/Globals".PieceColor.WHITE
@@ -108,15 +119,17 @@ func update_incheck() -> bool:
 	return false
 
 func add_checkmate_to_move_list():
-	
-	var idx = $MoveControl/MoveList.add_item("#")
-	$MoveControl/MoveList.set_item_disabled(idx, true)
-	
-	if in_check[0]:
-		idx = $MoveControl/MoveList.add_item("1-0")
+	var idx = $UI/MoveList.add_item("#")
+	$UI/MoveList.set_item_disabled(idx, true)
+
+func add_score_to_move_list(white_wins):
+	if white_wins:
+		var idx = $UI/MoveList.add_item("1-0")
+		$UI/MoveList.set_item_disabled(idx, true)
+		
 	else:
-		idx = $MoveControl/MoveList.add_item("0-1")
-	$MoveControl/MoveList.set_item_disabled(idx, true)
+		var idx = $UI/MoveList.add_item("0-1")
+		$UI/MoveList.set_item_disabled(idx, true)
 
 func is_checkmate() -> bool:
 	if !(in_check[0] || in_check[1]):
@@ -124,13 +137,38 @@ func is_checkmate() -> bool:
 		
 	# Single check
 	add_checkmate_to_move_list()
-	
+
 	return true
+
+func update_clock(clock_color, turn_over):
+	var current_time = Time.get_ticks_usec()
+	var ran_out_of_time = false
 	
+	# We don't start counting until a turn is taken
+	if start_turn_time != -1:
+		var elapsed_time = current_time - start_turn_time
+		var current_remaining_time = clock_times[clock_color] - (elapsed_time / 1000000)
+		if current_remaining_time < 0:
+			current_remaining_time = 0
+			ran_out_of_time = true
+			
+		if turn_over:
+			clock_times[clock_color] = current_remaining_time
+		
+		var minute = (int)(current_remaining_time / 60)
+		var second = (int)(current_remaining_time % 60)
+		var time = "%02d:%02d" % [minute, second]
+		if clock_color == $"/root/Globals".PieceColor.WHITE:
+			$UI/Clock/WhiteClock.text = time
+		else:
+			$UI/Clock/BlackClock.text = time
+
+	return ran_out_of_time
 
 func flip_turn():
 	if is_checkmate():
 		board_enabled = false
+		add_score_to_move_list(true)	
 	else:
 		if player_turn == $"/root/Globals".PieceColor.WHITE:
 			player_turn = $"/root/Globals".PieceColor.BLACK
@@ -139,6 +177,7 @@ func flip_turn():
 			player_turn = $"/root/Globals".PieceColor.WHITE
 
 		half_moves = half_moves + 1
+		start_turn_time = Time.get_ticks_usec()
 
 func reset_half_moves():
 	half_moves = 0
@@ -158,7 +197,7 @@ func reset_castling_permission():
 	castling_permission = [true, true, true, true]
 	
 func reset_move_list():
-	$MoveControl/MoveList.clear()
+	$UI/MoveList.clear()
 
 func update_markers(valid_moves):
 	reset_markers()
@@ -204,8 +243,8 @@ func add_move_to_move_list(piece, source, dest, capture, placed_in_check):
 	if placed_in_check:
 		final_string += "+"
 
-	var idx = $MoveControl/MoveList.add_item(final_string)
-	$MoveControl/MoveList.set_item_disabled(idx, true)
+	var idx = $UI/MoveList.add_item(final_string)
+	$UI/MoveList.set_item_disabled(idx, true)
 
 func handle_click(boundingRectangle, pos):
 
@@ -273,6 +312,7 @@ func handle_click(boundingRectangle, pos):
 							selected_tile = null
 							selected_piece = null
 							reset_half_moves()
+							update_clock(player_turn, true)
 							flip_turn()
 							found_dest = true
 						elif move_type == MoveGenerator.MoveType.NORMAL_OR_ATTACK and get_opposite_color(
@@ -286,6 +326,7 @@ func handle_click(boundingRectangle, pos):
 							selected_tile = null
 							selected_piece = null
 							reset_half_moves()
+							update_clock(player_turn, true)
 							flip_turn()
 							found_dest = true
 					else:
@@ -300,6 +341,7 @@ func handle_click(boundingRectangle, pos):
 						last_moved_piece_and_coord = [selected_piece, selected_tile]
 						selected_tile = null
 						selected_piece = null
+						update_clock(player_turn, true)
 						flip_turn()
 						found_dest = true
 
