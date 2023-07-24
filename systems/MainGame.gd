@@ -105,11 +105,14 @@ func update_incheck() -> bool:
 	in_check[$"/root/Globals".PieceColor.WHITE] = false
 	in_check[$"/root/Globals".PieceColor.BLACK] = false
 
+	
 	var attacked_locations = move_generator.determineAllAttackedSquares(self, player_turn)
-	for item in attacked_locations:
-		var move_type = item[0]
-		var attacked_square = item[1]
-		var piece_at_attacked_location = get_coord(attacked_square)
+	for attack in attacked_locations:
+		var source_coord = attack[0]
+		var piece_at_source = attack[1]
+		var move_type = attack[2]
+		var destination_coord = attack[3]
+		var piece_at_attacked_location = get_coord(destination_coord)
 		if piece_at_attacked_location != null:
 			if piece_at_attacked_location.get_type() == $"/root/Globals".PieceType.KING and piece_at_attacked_location.get_color() == get_opposite_color(
 					player_turn):
@@ -136,9 +139,9 @@ func is_checkmate() -> bool:
 		return false
 		
 	# Single check
-	add_checkmate_to_move_list()
-
-	return true
+	
+	#add_checkmate_to_move_list()
+	return false
 
 func update_clock(clock_color, turn_over):
 	var current_time = Time.get_ticks_usec()
@@ -286,17 +289,34 @@ func handle_click(boundingRectangle, pos):
 				var current_king = get_king_by_color(player_turn)
 				
 				var puts_king_in_check = false
+				var keeps_king_in_check = false
+				var attacked_locations = move_generator.determineAllAttackedSquares(self, get_opposite_color(player_turn))
 				if current_king != null:
-					var attacked_locations = move_generator.determineAllAttackedSquares(self, get_opposite_color(player_turn))
-					for item2 in attacked_locations:
-						var move = item2[1]
-						if move == current_king[0]:
+					for attack in attacked_locations:
+						var source_coord = attack[0]
+						
+						# Ignore attacks that come from the place we're about to move to
+						if source_coord.equal(new_selected_coord):
+							continue
+						
+						var destination_coord = attack[3]
+						if destination_coord.equal(current_king[0]):
 							print("Cannot move " + str(selected_piece) + " as it would place your king in check")
 							puts_king_in_check = true
 
 				set_coord(selected_tile, selected_piece)
 
-				if puts_king_in_check:
+				# We also need to check that if our king is in check, it no longer is after this move
+				if in_check[player_turn] and current_king != null:
+					print("We're in check")
+					for attack in attacked_locations:
+						var destination_coord = attack[3]
+						if destination_coord.equal(current_king[0]):
+							if valid_move_destination_piece != attack[1]:
+								print("Cannot move " + str(selected_piece) + " as our king is in check and this won't resolve it")
+								keeps_king_in_check = true
+
+				if puts_king_in_check or keeps_king_in_check:
 					selected_piece = null
 					selected_tile = null
 				else:
@@ -353,15 +373,8 @@ func handle_click(boundingRectangle, pos):
 			selected_tile = null
 			selected_piece = null
 	elif new_selected_piece != null and new_selected_piece.get_color() == player_turn:
-		# If you're in check, you can only select your king to move
-		if in_check[player_turn] and new_selected_piece.get_type() == $"/root/Globals".PieceType.KING:
-			selected_tile = new_selected_coord
-			selected_piece = new_selected_piece
-		elif not in_check[player_turn]:
-			selected_tile = new_selected_coord
-			selected_piece = new_selected_piece
-		else:
-			print("Must select king when in check")
+		selected_tile = new_selected_coord
+		selected_piece = new_selected_piece
 		
 		if selected_piece != null:
 			markers_moves = move_generator.get_valid_moves(selected_piece, selected_tile, self, false)

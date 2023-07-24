@@ -25,14 +25,17 @@ func addNormalOrAttackMoveIfNotAttacked(board, new_move, possible_moves, attacke
 	if not new_move.is_on_board():
 		return
 
-	if board.get_coord(new_move) == null:
-		var is_attacked = false
-		for attacked_location in attacked_locations:
-			if new_move == attacked_location[1]:
-				is_attacked = true
+	var is_attacked = false
+	for attack in attacked_locations:
+		var source_coord = attack[0]
+		var piece_at_source = attack[1]
+		var move_type = attack[2]
+		var destination_coord = attack[3]
+		if new_move == destination_coord:
+			is_attacked = true
 
-		if not is_attacked:
-			possible_moves.append([MoveType.NORMAL_OR_ATTACK, new_move])
+	if not is_attacked:
+		possible_moves.append([MoveType.NORMAL_OR_ATTACK, new_move])
 
 func addNormalOrAttackMove(board, new_move, possible_moves):
 	if not new_move.is_on_board():
@@ -76,17 +79,26 @@ func addMovesInDirection(piece, board, location, direction, possible_moves):
 		elif piece.isSameColor(target_piece):
 			running = false
 
-
+# Returns an array in the shape of [source_coord, piece_at_source, [[move_type, destination_coord], ...]]
 static func determineAllAttackedSquares(board, color):
 	var pieces = board.get_pieces_by_color(color)
 	var allPossibleMovesByColor = []
 	for item in pieces:
-		allPossibleMovesByColor += board.move_generator.get_valid_moves(item[1], item[0], board, true)
+		var coord = item[0]
+		var piece_at_coord = item[1]
+		var piece_with_moves = [coord, piece_at_coord, [board.move_generator.get_valid_moves(piece_at_coord, coord, board, true)]]
+		allPossibleMovesByColor += [piece_with_moves]
 
 	var allAttackMovesByColor = []
-	for item in allPossibleMovesByColor:
-		if item[0] == MoveType.ATTACK or item[0] == MoveType.NORMAL_OR_ATTACK:
-			allAttackMovesByColor.append([item[0], item[1]])
+	for attack in allPossibleMovesByColor:
+		var coord = attack[0]
+		var piece_at_coord = attack[1]
+		var moves = attack[2][0]
+		for item2 in moves:
+			var move_type = item2[0]
+			var destination_coord = item2[1]
+			if move_type == MoveType.ATTACK or move_type == MoveType.NORMAL_OR_ATTACK:
+				allAttackMovesByColor.append([coord, piece_at_coord, move_type, destination_coord])
 
 	return allAttackMovesByColor
 
@@ -110,7 +122,7 @@ func determinePossiblePawnMoves(piece, location, board, includeAllAttacks, possi
 func determinePossibleKingMoves(piece, location, board, includeAllAttacks, possible_moves):
 	var attacked_locations = []
 	if piece.get_color() == board.get_turn():
-		attacked_locations = determineAllAttackedSquares(board,  board.get_opposite_color(piece.get_color()))
+		attacked_locations = determineAllAttackedSquares(board, board.get_opposite_color(piece.get_color()))
 
 	for d in Direction:
 		var d_as_int = Direction[d]
