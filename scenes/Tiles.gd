@@ -11,9 +11,9 @@ const tile_height = 64
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	for r in range(0, $"/root/Constants".BOARD_HEIGHT_IN_TILES):
+	for r in range(0, Constants.BOARD_HEIGHT_IN_TILES):
 		tiles.append([])
-		for c in range(0, $"/root/Constants".BOARD_WIDTH_IN_TILES):
+		for c in range(0, Constants.BOARD_WIDTH_IN_TILES):
 			var tile = tile_preload.instantiate()
 			tile.position.x = c * tile_width
 			tile.position.y = r * tile_height

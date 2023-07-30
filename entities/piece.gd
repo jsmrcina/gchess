@@ -1,14 +1,11 @@
+class_name Piece
+
 extends Node2D
 
 var type
 var color
 var direction
 var starting_row_position : int
-
-var Coord = load("res://systems/coord.gd")
-const PieceType = preload("res://systems/globals.gd").PieceType
-const PieceColor = preload("res://systems/globals.gd").PieceColor
-const Direction = preload("res://systems/globals.gd").Direction
 
 func create(info):
 	type = info[0]
@@ -17,12 +14,12 @@ func create(info):
 	direction = null
 	starting_row_position = -1
 
-	if type == PieceType.PAWN:
-		if color == PieceColor.WHITE:
-			direction = Direction.RANK_UP
+	if type == Globals.PieceType.PAWN:
+		if color == Globals.PieceColor.WHITE:
+			direction = Globals.Direction.RANK_UP
 			starting_row_position = 2
 		else:
-			direction = Direction.RANK_DOWN
+			direction = Globals.Direction.RANK_DOWN
 			starting_row_position = 7
 
 func get_color():
@@ -40,22 +37,22 @@ func get_starting_row_position():
 func to_san_string():
 
 	var toReturn = null
-	if self.get_type() == PieceType.PAWN:
+	if self.get_type() == Globals.PieceType.PAWN:
 		toReturn = ''
-	elif self.get_type() == PieceType.KNIGHT:
+	elif self.get_type() == Globals.PieceType.KNIGHT:
 		toReturn = 'N'
-	elif self.get_type() == PieceType.BISHOP:
+	elif self.get_type() == Globals.PieceType.BISHOP:
 		toReturn = 'B'
-	elif self.get_type() == PieceType.ROOK:
+	elif self.get_type() == Globals.PieceType.ROOK:
 		toReturn = 'R'
-	elif self.get_type() == PieceType.QUEEN:
+	elif self.get_type() == Globals.PieceType.QUEEN:
 		toReturn = 'Q'
-	elif self.get_type() == PieceType.KING:
+	elif self.get_type() == Globals.PieceType.KING:
 		toReturn = 'K'
 	else:
 		assert(false)
 
-	if self.get_color() == PieceColor.BLACK:
+	if self.get_color() == Globals.PieceColor.BLACK:
 		return toReturn
 
 	return toReturn.to_upper()

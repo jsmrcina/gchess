@@ -1,6 +1,6 @@
 extends Node
 
-var Coord = load("res://systems/coord.gd")
+# var Coord = load("res://systems/coord.gd")
 const PieceType = preload("res://systems/globals.gd").PieceType
 const PieceColor = preload("res://systems/globals.gd").PieceColor
 const Direction = preload("res://systems/globals.gd").Direction
@@ -12,16 +12,16 @@ enum MoveType
 	NORMAL_OR_ATTACK = 2
 }
 
-var possible_moves : Array = []
+var possible_moves : Array[Coord] = []
 
-func addNormalMoveIfEmpty(board, new_move, possible_moves):
+func addNormalMoveIfEmpty(board : Board, new_move : Coord, possible_moves : Array):
 	if not new_move.is_on_board():
 		return
 
 	if board.get_coord(new_move) == null:
 		possible_moves.append([MoveType.NORMAL, new_move])
 
-func addNormalOrAttackMoveIfNotAttacked(board, new_move, possible_moves, attacked_locations):
+func addNormalOrAttackMoveIfNotAttacked(board : Board, new_move : Coord, possible_moves : Array, attacked_locations : Array):
 	if not new_move.is_on_board():
 		return
 
@@ -37,19 +37,19 @@ func addNormalOrAttackMoveIfNotAttacked(board, new_move, possible_moves, attacke
 	if not is_attacked:
 		possible_moves.append([MoveType.NORMAL_OR_ATTACK, new_move])
 
-func addNormalOrAttackMove(board, new_move, possible_moves):
+func addNormalOrAttackMove(board : Board, new_move : Coord, possible_moves : Array):
 	if not new_move.is_on_board():
 		return
 
 	possible_moves.append([MoveType.NORMAL_OR_ATTACK, new_move])
 
-func addAttackMove(new_move, possible_moves):
+func addAttackMove(new_move : Coord, possible_moves : Array):
 	if not new_move.is_on_board():
 		return
 
 	possible_moves.append([MoveType.ATTACK, new_move])
 
-func addAttackMoveIfEnemy(location, board, new_move, possible_moves):
+func addAttackMoveIfEnemy(location : Coord, board, new_move : Coord, possible_moves : Array):
 	if not new_move.is_on_board():
 		return
 
@@ -58,10 +58,9 @@ func addAttackMoveIfEnemy(location, board, new_move, possible_moves):
 	if moving_piece.isOppositeColor(target_piece):
 		possible_moves.append([MoveType.ATTACK, new_move])
 
-func addMovesInDirection(piece, board, location, direction, possible_moves):
+func addMovesInDirection(piece : Piece, board, location : Coord, direction : Globals.Direction, possible_moves : Array):
 	var running = true
 	var step = location
-	# moving_piece = board.get_coord(location)
 
 	while running:
 		step = step.get_in_direction(direction)
@@ -80,13 +79,14 @@ func addMovesInDirection(piece, board, location, direction, possible_moves):
 			running = false
 
 # Returns an array in the shape of [source_coord, piece_at_source, [[move_type, destination_coord], ...]]
-static func determineAllAttackedSquares(board, color):
+# Which contains all squares attacked by the passed color
+func determineAllAttackedSquares(board : Board, color : Globals.PieceColor):
 	var pieces = board.get_pieces_by_color(color)
 	var allPossibleMovesByColor = []
 	for item in pieces:
 		var coord = item[0]
 		var piece_at_coord = item[1]
-		var piece_with_moves = [coord, piece_at_coord, [board.move_generator.get_valid_moves(piece_at_coord, coord, board, true)]]
+		var piece_with_moves = [coord, piece_at_coord, [get_valid_moves(piece_at_coord, coord, board, color, true)]]
 		allPossibleMovesByColor += [piece_with_moves]
 
 	var allAttackMovesByColor = []
@@ -102,7 +102,7 @@ static func determineAllAttackedSquares(board, color):
 
 	return allAttackMovesByColor
 
-func determinePossiblePawnMoves(piece, location, board, includeAllAttacks, possible_moves):
+func determinePossiblePawnMoves(piece : Piece, location : Coord, board : Board, include_all_attacks : bool, possible_moves : Array):
 	var step = location.get_in_direction(piece.get_direction())
 
 	addNormalMoveIfEmpty(board, step, possible_moves)
@@ -112,38 +112,38 @@ func determinePossiblePawnMoves(piece, location, board, includeAllAttacks, possi
 	var east_diag_step = step.get_in_direction(Direction.FILE_UP)
 	var west_diag_step = step.get_in_direction(Direction.FILE_DOWN)
 
-	if includeAllAttacks:
+	if include_all_attacks:
 		addAttackMove(east_diag_step, possible_moves)
 		addAttackMove(west_diag_step, possible_moves)
 	else:
 		addAttackMoveIfEnemy(location, board, east_diag_step, possible_moves)
 		addAttackMoveIfEnemy(location, board, west_diag_step, possible_moves)
 
-func determinePossibleKingMoves(piece, location, board, includeAllAttacks, possible_moves):
+func determinePossibleKingMoves(piece : Piece, location : Coord, board : Board, turn : Globals.PieceColor, include_all_attacks : bool, possible_moves : Array):
 	var attacked_locations = []
-	if piece.get_color() == board.get_turn():
-		attacked_locations = determineAllAttackedSquares(board, board.get_opposite_color(piece.get_color()))
+	if piece.get_color() == turn:
+		attacked_locations = determineAllAttackedSquares(board, Globals.get_opposite_color(turn))
 
 	for d in Direction:
 		var d_as_int = Direction[d]
 		addNormalOrAttackMoveIfNotAttacked(board, location.get_in_direction(d_as_int), possible_moves, attacked_locations)
 
-func determinePossibleQueenMoves(piece, location, board, includeAllAttacks, possible_moves):
+func determinePossibleQueenMoves(piece : Piece, location : Coord, board : Board, include_all_attacks : bool, possible_moves : Array):
 	for d in Direction:
 		var d_as_int = Direction[d]
 		addMovesInDirection(piece, board, location, d_as_int, possible_moves)
 
-func determinePossibleRookMoves(piece, location, board, includeAllAttacks, possible_moves):
+func determinePossibleRookMoves(piece : Piece, location : Coord, board : Board, include_all_attacks : bool, possible_moves : Array):
 	var cardinal_directions = [Direction.RANK_UP, Direction.RANK_DOWN, Direction.FILE_UP, Direction.FILE_DOWN]
 	for d in cardinal_directions:
 		addMovesInDirection(piece, board, location, d, possible_moves)
 
-func determinePossibleBishopMoves(piece, location, board, includeAllAttacks, possible_moves):
+func determinePossibleBishopMoves(piece : Piece, location : Coord, board : Board, include_all_attacks : bool, possible_moves : Array):
 	var cardinal_directions = [Direction.RANK_UP_FILE_UP, Direction.RANK_UP_FILE_DOWN, Direction.RANK_DOWN_FILE_UP, Direction.RANK_DOWN_FILE_DOWN]
 	for d in cardinal_directions:
 		addMovesInDirection(piece, board, location, d, possible_moves)
 
-func determinePossibleKnightMoves(piece, location, board, includeAllAttacks, possible_moves):
+func determinePossibleKnightMoves(piece : Piece, location : Coord, board : Board, include_all_attacks : bool, possible_moves : Array):
 	var cardinal_directions = [Direction.RANK_UP, Direction.RANK_DOWN, Direction.FILE_UP, Direction.FILE_DOWN]
 
 	for r in cardinal_directions.slice(0, 2):
@@ -158,21 +158,21 @@ func determinePossibleKnightMoves(piece, location, board, includeAllAttacks, pos
 			var oneInRank = twoInFile.get_in_direction(f)
 			addNormalOrAttackMove(board, oneInRank, possible_moves)
 
-func get_valid_moves(piece, location, board, includeAllAttacks):
+func get_valid_moves(piece : Piece, location : Coord, board : Board, turn : Globals.PieceColor, include_all_attacks : bool):
 	var possible_moves = []
 
 	if piece.get_type() == PieceType.PAWN:
-		determinePossiblePawnMoves(piece, location, board, includeAllAttacks, possible_moves)
+		determinePossiblePawnMoves(piece, location, board, include_all_attacks, possible_moves)
 	elif piece.get_type() == PieceType.KING:
-		determinePossibleKingMoves(piece, location, board, includeAllAttacks, possible_moves)
+		determinePossibleKingMoves(piece, location, board, turn, include_all_attacks, possible_moves)
 	if piece.get_type() == PieceType.QUEEN:
-		determinePossibleQueenMoves(piece, location, board, includeAllAttacks, possible_moves)
+		determinePossibleQueenMoves(piece, location, board, include_all_attacks, possible_moves)
 	if piece.get_type() == PieceType.ROOK:
-		determinePossibleRookMoves(piece, location, board, includeAllAttacks, possible_moves)
+		determinePossibleRookMoves(piece, location, board, include_all_attacks, possible_moves)
 	if piece.get_type() == PieceType.BISHOP:
-		determinePossibleBishopMoves(piece, location, board, includeAllAttacks, possible_moves)
+		determinePossibleBishopMoves(piece, location, board, include_all_attacks, possible_moves)
 	if piece.get_type() == PieceType.KNIGHT:
-		determinePossibleKnightMoves(piece, location, board, includeAllAttacks, possible_moves)
+		determinePossibleKnightMoves(piece, location, board, include_all_attacks, possible_moves)
 
 	# Prune out of bounds
 	var result = []

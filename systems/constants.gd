@@ -1,7 +1,9 @@
-extends Node
+class_name Constants
 
-const BOARD_WIDTH_IN_TILES : int = 8
-const BOARD_HEIGHT_IN_TILES : int = 8
+extends Object
 
-const TILE_WIDTH : int = 64
-const TILE_HEIGHT : int = 64
+static var BOARD_WIDTH_IN_TILES : int = 8
+static var BOARD_HEIGHT_IN_TILES : int = 8
+
+static var TILE_WIDTH : int = 64
+static var TILE_HEIGHT : int = 64

@@ -14,11 +14,6 @@ config/name="GChess"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.1", "Mobile")
 
-[autoload]
-
-Constants="*res://systems/constants.gd"
-Globals="*res://systems/globals.gd"
-
 [input]
 
 click={

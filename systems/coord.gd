@@ -1,11 +1,11 @@
-extends Node2D
+class_name Coord
+
+extends Object
 
 var rank : int
 var file : String
 
-var Coord = load("res://systems/coord.gd")
-var Constants = preload("res://systems/constants.gd")
-var Globals = preload("res://systems/globals.gd")
+# var Coord = load("res://systems/coord.gd")
 
 func _init(r: int, f: String):
 	rank = r
@@ -13,7 +13,7 @@ func _init(r: int, f: String):
 
 func set_rank_from_index(index : int):
 	# The top of the board is 8, but our array is indexed from 0
-	rank = Constants.BOARD_HEIGHT - index
+	rank = Constants.BOARD_HEIGHT_IN_TILES - index
 
 func set_file(str : String):
 	file = str
