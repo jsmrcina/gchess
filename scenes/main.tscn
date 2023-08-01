@@ -1,11 +1,30 @@
-[gd_scene load_steps=7 format=3 uid="uid://cbmvjf3ejtrbg"]
+[gd_scene load_steps=12 format=3 uid="uid://cbmvjf3ejtrbg"]
 
 [ext_resource type="Script" path="res://systems/MainGame.gd" id="1_r2qtu"]
 [ext_resource type="Script" path="res://scenes/Tiles.gd" id="1_whl31"]
-[ext_resource type="PackedScene" uid="uid://d0nhad3sfsena" path="res://entities/tile.tscn" id="2_yaddp"]
 [ext_resource type="Script" path="res://systems/PieceManager.gd" id="3_bjd1x"]
 [ext_resource type="PackedScene" uid="uid://bknyt3jr1wtsx" path="res://entities/tile_marker.tscn" id="4_uer28"]
+[ext_resource type="PackedScene" uid="uid://dbijbncklxsnb" path="res://entities/turn_marker.tscn" id="4_xjrox"]
 [ext_resource type="Script" path="res://systems/MoveGenerator.gd" id="5_68qmr"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_7gmj6"]
+line_spacing = 5.0
+font_size = 32
+font_color = Color(1, 0, 0, 1)
+outline_size = 5
+outline_color = Color(1, 0.858824, 0.835294, 1)
+shadow_size = 10
+shadow_color = Color(0, 0, 0, 0.878431)
+
+[sub_resource type="LabelSettings" id="LabelSettings_juccd"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_djjrh"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_rr3ce"]
+font_color = Color(0, 0, 0, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_5jpuh"]
+font_color = Color(0, 0, 0, 1)
 
 [node name="MainGame" type="Node2D"]
 script = ExtResource("1_r2qtu")
@@ -16,8 +35,8 @@ position = Vector2(50, 50)
 [node name="Control" type="Control" parent="Board"]
 layout_mode = 3
 anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
+offset_right = 548.0
+offset_bottom = 545.0
 
 [node name="Ranks" type="Panel" parent="Board/Control"]
 layout_mode = 0
@@ -176,6 +195,19 @@ text = "H"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="GameOver" type="Label" parent="Board/Control"]
+visible = false
+z_index = 2
+layout_mode = 0
+offset_left = 188.0
+offset_top = 231.0
+offset_right = 370.0
+offset_bottom = 281.0
+text = "Game Over!"
+label_settings = SubResource("LabelSettings_7gmj6")
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="Tiles" type="Node2D" parent="Board"]
 position = Vector2(32, 32)
 script = ExtResource("1_whl31")
@@ -186,8 +218,6 @@ z_index = 1
 [node name="TileMarker" parent="Board/Tiles/Markers" instance=ExtResource("4_uer28")]
 visible = false
 position = Vector2(50, 50)
-
-[node name="Tile" parent="Board/Tiles" instance=ExtResource("2_yaddp")]
 
 [node name="UI" type="Control" parent="."]
 layout_mode = 3
@@ -204,7 +234,7 @@ offset_bottom = 544.0
 focus_mode = 0
 allow_search = false
 
-[node name="Button" type="Button" parent="UI"]
+[node name="NewGame" type="Button" parent="UI"]
 layout_mode = 0
 offset_left = 250.0
 offset_right = 400.0
@@ -222,6 +252,7 @@ offset_top = 500.0
 offset_right = 325.0
 offset_bottom = 540.0
 text = "10:00"
+label_settings = SubResource("LabelSettings_juccd")
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -232,6 +263,7 @@ offset_top = 475.0
 offset_right = 325.0
 offset_bottom = 515.0
 text = "White"
+label_settings = SubResource("LabelSettings_djjrh")
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -242,6 +274,7 @@ offset_top = 500.0
 offset_right = 400.0
 offset_bottom = 540.0
 text = "10:00"
+label_settings = SubResource("LabelSettings_rr3ce")
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -252,8 +285,21 @@ offset_top = 475.0
 offset_right = 400.0
 offset_bottom = 515.0
 text = "Black"
+label_settings = SubResource("LabelSettings_5jpuh")
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="WhiteTurnMarker" parent="UI/Clock" instance=ExtResource("4_xjrox")]
+offset_left = 250.0
+offset_top = 450.0
+offset_right = 250.0
+offset_bottom = 450.0
+
+[node name="BlackTurnMarker" parent="UI/Clock" instance=ExtResource("4_xjrox")]
+offset_left = 325.0
+offset_top = 450.0
+offset_right = 325.0
+offset_bottom = 450.0
 
 [node name="PieceManager" type="Node" parent="."]
 script = ExtResource("3_bjd1x")
@@ -261,4 +307,4 @@ script = ExtResource("3_bjd1x")
 [node name="MoveGenerator" type="Node" parent="."]
 script = ExtResource("5_68qmr")
 
-[connection signal="pressed" from="UI/Button" to="." method="_on_new_game_button_pressed"]
+[connection signal="pressed" from="UI/NewGame" to="." method="_on_new_game_button_pressed"]

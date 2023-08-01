@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://bknyt3jr1wtsx"]
 
-[ext_resource type="Script" path="res://TileMarker.gd" id="1_144kb"]
+[ext_resource type="Script" path="res://entities/tile_marker.gd" id="1_h4gff"]
 
 [node name="TileMarker" type="Node2D"]
-script = ExtResource("1_144kb")
+script = ExtResource("1_h4gff")

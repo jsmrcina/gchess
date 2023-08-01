@@ -1,0 +1,23 @@
+[gd_scene load_steps=3 format=3 uid="uid://dbijbncklxsnb"]
+
+[ext_resource type="Script" path="res://entities/turn_marker_border.gd" id="1_n38ci"]
+[ext_resource type="Script" path="res://entities/turn_marker.gd" id="1_yovt3"]
+
+[node name="TurnMarker" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_yovt3")
+
+[node name="TurnMarkerBorder" type="ColorRect" parent="."]
+layout_mode = 0
+offset_right = 79.0
+offset_bottom = 29.0
+script = ExtResource("1_n38ci")
+
+[node name="Interior" type="ColorRect" parent="."]
+layout_mode = 0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = 77.0
+offset_bottom = 27.0
+color = Color(1, 0.992157, 0.678431, 1)

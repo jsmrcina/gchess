@@ -14,6 +14,7 @@ enum MoveType
 
 var possible_moves : Array[Coord] = []
 
+# This is only used for pawns moving straight forward
 func addNormalMoveIfEmpty(board : Board, new_move : Coord, possible_moves : Array):
 	if not new_move.is_on_board():
 		return
@@ -31,11 +32,13 @@ func addNormalOrAttackMoveIfNotAttacked(board : Board, new_move : Coord, possibl
 		var piece_at_source = attack[1]
 		var move_type = attack[2]
 		var destination_coord = attack[3]
-		if new_move == destination_coord:
+		if new_move.equal(destination_coord):
 			is_attacked = true
+			break
 
 	if not is_attacked:
-		possible_moves.append([MoveType.NORMAL_OR_ATTACK, new_move])
+		if board.get_coord(new_move) == null:
+			possible_moves.append([MoveType.NORMAL_OR_ATTACK, new_move])
 
 func addNormalOrAttackMove(board : Board, new_move : Coord, possible_moves : Array):
 	if not new_move.is_on_board():
@@ -71,7 +74,7 @@ func addMovesInDirection(piece : Piece, board, location : Coord, direction : Glo
 
 		var target_piece = board.get_coord(step)
 		if target_piece == null:
-			possible_moves.append([MoveType.NORMAL, step])
+			possible_moves.append([MoveType.NORMAL_OR_ATTACK, step])
 		elif piece.isOppositeColor(target_piece):
 			possible_moves.append([MoveType.NORMAL_OR_ATTACK, step])
 			running = false

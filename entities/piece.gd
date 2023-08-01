@@ -7,6 +7,15 @@ var color
 var direction
 var starting_row_position : int
 
+func copy(other : Piece):
+	type = other.type
+	color = other.color
+	direction = other.direction
+	starting_row_position = other.starting_row_position
+	
+	# Not needed for the copies we do
+	# get_node("Sprite2D").texture = other.get_node("Sprite2D").texture
+
 func create(info):
 	type = info[0]
 	color = info[1]
@@ -34,21 +43,20 @@ func get_direction():
 func get_starting_row_position():
 	return starting_row_position
 
-func to_san_string():
-
+func to_readable_string():
 	var toReturn = null
 	if self.get_type() == Globals.PieceType.PAWN:
-		toReturn = ''
+		toReturn = 'p'
 	elif self.get_type() == Globals.PieceType.KNIGHT:
-		toReturn = 'N'
+		toReturn = 'n'
 	elif self.get_type() == Globals.PieceType.BISHOP:
-		toReturn = 'B'
+		toReturn = 'b'
 	elif self.get_type() == Globals.PieceType.ROOK:
-		toReturn = 'R'
+		toReturn = 'r'
 	elif self.get_type() == Globals.PieceType.QUEEN:
-		toReturn = 'Q'
+		toReturn = 'q'
 	elif self.get_type() == Globals.PieceType.KING:
-		toReturn = 'K'
+		toReturn = 'k'
 	else:
 		assert(false)
 
@@ -56,6 +64,13 @@ func to_san_string():
 		return toReturn
 
 	return toReturn.to_upper()
+
+func to_san_string():
+	var output = to_readable_string()
+	if output == 'P' or output == 'p':
+		return ''
+	else:
+		return output
 
 func isOppositeColor(other):
 	if other == null:
@@ -77,11 +92,3 @@ func isSameColor(other):
 
 func _to_string():
 	return to_san_string()
-
-# Called when the node enters the scene tree for the first time.
-func _ready():
-	pass # Replace with function body.
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta):
-	pass

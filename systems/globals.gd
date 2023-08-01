@@ -19,6 +19,9 @@ enum Direction {
 	RANK_DOWN_FILE_UP = 7
 }
 
+static var WHITE_COLOR = Color("#ffffff")
+static var BLACK_COLOR = Color("#000000")
+
 static func get_opposite_color(color):
 	if color == Globals.PieceColor.WHITE:
 		return Globals.PieceColor.BLACK
