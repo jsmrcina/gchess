@@ -80,13 +80,13 @@ func addMovesInDirection(piece : Piece, board, location : Coord, direction : Glo
 
 # Returns an array in the shape of [source_coord, piece_at_source, [[move_type, destination_coord], ...]]
 # Which contains all squares attacked by the passed color
-func determineAllAttackedSquares(board : Board, color : Globals.PieceColor):
+func determineAllAttackedSquares(board : Board, color : Globals.PieceColor, turn : Globals.PieceColor):
 	var pieces = board.get_pieces_by_color(color)
 	var allPossibleMovesByColor = []
 	for item in pieces:
 		var coord = item[0]
 		var piece_at_coord = item[1]
-		var piece_with_moves = [coord, piece_at_coord, [get_valid_moves(piece_at_coord, coord, board, color, true)]]
+		var piece_with_moves = [coord, piece_at_coord, [get_valid_moves(piece_at_coord, coord, board, turn, true)]]
 		allPossibleMovesByColor += [piece_with_moves]
 
 	var allAttackMovesByColor = []
@@ -122,7 +122,7 @@ func determinePossiblePawnMoves(piece : Piece, location : Coord, board : Board, 
 func determinePossibleKingMoves(piece : Piece, location : Coord, board : Board, turn : Globals.PieceColor, include_all_attacks : bool, possible_moves : Array):
 	var attacked_locations = []
 	if piece.get_color() == turn:
-		attacked_locations = determineAllAttackedSquares(board, Globals.get_opposite_color(turn))
+		attacked_locations = determineAllAttackedSquares(board, Globals.get_opposite_color(turn), turn)
 
 	for d in Direction:
 		var d_as_int = Direction[d]

@@ -90,7 +90,7 @@ func update_incheck() -> bool:
 	in_check[Globals.PieceColor.BLACK] = false
 
 	
-	var attacked_locations = move_generator.determineAllAttackedSquares(board, player_turn)
+	var attacked_locations = move_generator.determineAllAttackedSquares(board, player_turn, player_turn)
 	for attack in attacked_locations:
 		var source_coord = attack[0]
 		var piece_at_source = attack[1]
@@ -274,7 +274,7 @@ func handle_click(boundingRectangle, pos):
 				
 				var puts_king_in_check = false
 				var keeps_king_in_check = false
-				var attacked_locations = move_generator.determineAllAttackedSquares(board, Globals.get_opposite_color(player_turn))
+				var attacked_locations = move_generator.determineAllAttackedSquares(board, Globals.get_opposite_color(player_turn), player_turn)
 				if current_king != null:
 					for attack in attacked_locations:
 						var source_coord = attack[0]
