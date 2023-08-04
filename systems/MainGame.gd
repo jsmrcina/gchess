@@ -1,11 +1,9 @@
 extends Node2D
 
 # Missing rules
-# Castling
 # En Passant
 # Promotion
 
-#var Coord = load("res://systems/coord.gd")
 var Piece = preload("res://entities/piece.tscn")
 var TileMarker = preload("res://entities/tile_marker.tscn")
 var MoveGenerator = load("res://systems/MoveGenerator.gd")
@@ -340,7 +338,7 @@ func update_markers(valid_moves):
 			markers[valid_move.get_row()][valid_move.get_col()].set_color(color)
 			markers[valid_move.get_row()][valid_move.get_col()].visible = true
 
-# Note: Does not do en passant, move disambiguation, or promotion, castling
+# Note: Does not do en passant, move disambiguation, or promotion
 # Reference: https://en.wikipedia.org/wiki/Algebraic_notation_(chess)
 func add_move_to_move_list(piece : Piece, source : Coord, dest : Coord, capture : bool, placed_in_check : bool, castling_side : Globals.CastlingSide):
 	
