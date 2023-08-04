@@ -4,6 +4,8 @@ class_name Globals
 
 static var PieceManager = preload("res://systems/PieceManager.gd")
 
+enum CastlingSide { KING = 0, QUEEN = 1, NONE = 2}
+
 enum PieceType { PAWN = 0, KNIGHT = 1, BISHOP = 2, ROOK = 3, QUEEN = 4, KING = 5 }
 
 enum PieceColor { BLACK, WHITE }

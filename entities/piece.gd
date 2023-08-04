@@ -5,31 +5,34 @@ extends Node2D
 var type
 var color
 var direction
-var starting_row_position : int
+var starting_rank_position : int
+var starting_file_position : String
 
 func copy(other : Piece):
 	type = other.type
 	color = other.color
 	direction = other.direction
-	starting_row_position = other.starting_row_position
+	starting_rank_position = other.starting_rank_position
 	
 	# Not needed for the copies we do
 	# get_node("Sprite2D").texture = other.get_node("Sprite2D").texture
 
-func create(info):
+func create(position : Coord, info : Array):
 	type = info[0]
 	color = info[1]
 	get_node("Sprite2D").texture = info[2]
 	direction = null
-	starting_row_position = -1
+	starting_rank_position = -1
 
 	if type == Globals.PieceType.PAWN:
 		if color == Globals.PieceColor.WHITE:
 			direction = Globals.Direction.RANK_UP
-			starting_row_position = 2
+			starting_rank_position = 2
 		else:
 			direction = Globals.Direction.RANK_DOWN
-			starting_row_position = 7
+			starting_rank_position = 7
+	elif type == Globals.PieceType.ROOK:
+		starting_file_position = position.get_file()
 
 func get_color():
 	return color
@@ -40,8 +43,11 @@ func get_type():
 func get_direction():
 	return direction
 
-func get_starting_row_position():
-	return starting_row_position
+func get_starting_rank_position():
+	return starting_rank_position
+	
+func get_starting_file_position():
+	return starting_file_position
 
 func to_readable_string():
 	var toReturn = null

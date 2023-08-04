@@ -13,17 +13,18 @@ var MoveGenerator = load("res://systems/MoveGenerator.gd")
 var board_enabled : bool = true
 var board : Board
 var markers : Array = []
-var player_turn
+var player_turn : Globals.PieceColor
 var in_check : Array[bool] = [false, false]
-var castling_permission : Array[bool] = [true, true, true, true]
+var castling_permission : Array = [[true, true], [true, true]] # King / Queen side
 var half_moves : int = 0
 var full_moves : int = 1
-var move_generator
+var move_list_moves : int = 0
+var move_generator : MoveGenerator
 var start_turn_time : int = -1
-var clock_times : Array[int] = [60 * 10, 1 * 10]
+var clock_times : Array[int] = [60 * 10, 60 * 10]
 
-var selected_tile
-var selected_piece
+var selected_tile : Coord
+var selected_piece : Piece
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -98,7 +99,7 @@ func update_incheck() -> bool:
 	in_check[Globals.PieceColor.WHITE] = false
 	in_check[Globals.PieceColor.BLACK] = false
 
-	var attacked_locations = move_generator.determineAllAttackedSquares(board, player_turn, player_turn)
+	var attacked_locations = move_generator.determineAllAttackedSquares(board, player_turn, player_turn, castling_permission)
 	for attack in attacked_locations:
 		var source_coord = attack[0]
 		var piece_at_source = attack[1]
@@ -112,6 +113,21 @@ func update_incheck() -> bool:
 				return true
 
 	return false
+
+func update_castling_permission(moved_piece : Piece):
+	# If you move your king, both types are not permitted
+	if moved_piece.get_type() == Globals.PieceType.KING:
+		castling_permission[Globals.get_opposite_color(player_turn)][Globals.CastlingSide.KING] = false
+		castling_permission[Globals.get_opposite_color(player_turn)][Globals.CastlingSide.QUEEN] = false
+	
+	# If you move a rook, you cannot castle that side any longer
+	if moved_piece.get_type() == Globals.PieceType.ROOK:
+		if moved_piece.get_starting_file_position() == 'A':
+			castling_permission[Globals.get_opposite_color(player_turn)][Globals.CastlingSide.QUEEN] = false
+		else:
+			castling_permission[Globals.get_opposite_color(player_turn)][Globals.CastlingSide.KING] = false
+
+	print(str(castling_permission))
 
 func add_checkmate_to_move_list():
 	var idx = $UI/MoveList.add_item("#")
@@ -134,7 +150,7 @@ func is_checkmate() -> bool:
 	var checked_king = board.get_king_by_color(Globals.get_opposite_color(player_turn))
 	
 	# Find all attacks participating in this check
-	var attacked_locations = move_generator.determineAllAttackedSquares(board, player_turn, player_turn)
+	var attacked_locations = move_generator.determineAllAttackedSquares(board, player_turn, player_turn, castling_permission)
 	for attack in attacked_locations:
 		var source_coord = attack[0]
 		var piece_at_source = attack[1]
@@ -152,17 +168,17 @@ func is_checkmate() -> bool:
 	# Single check
 	if attacks_participating_in_check.size() == 1:
 		# Can the king move?
-		var valid_king_moves = move_generator.get_valid_moves(checked_king[1], checked_king[0], board, Globals.get_opposite_color(player_turn), false)
+		var valid_king_moves = move_generator.get_valid_moves(checked_king[1], checked_king[0], board, Globals.get_opposite_color(player_turn), castling_permission, false)
 		if valid_king_moves.size() == 0:
 			var attacking_piece_coord = attacks_participating_in_check[0][0]
 			var attacking_piece = attacks_participating_in_check[0][1]
-			var valid_attacker_moves = move_generator.get_valid_moves(attacking_piece, attacking_piece_coord, board, player_turn, false)
+			var valid_attacker_moves = move_generator.get_valid_moves(attacking_piece, attacking_piece_coord, board, player_turn, castling_permission, false)
 			
 			# Can someone intercept or take the piece
 			for piece_tuple in board.get_pieces_by_color(Globals.get_opposite_color(player_turn)):
 				var piece_coord = piece_tuple[0]
 				var piece = piece_tuple[1]
-				var valid_piece_moves = move_generator.get_valid_moves(piece, piece_coord, board, Globals.get_opposite_color(player_turn), false)
+				var valid_piece_moves = move_generator.get_valid_moves(piece, piece_coord, board, Globals.get_opposite_color(player_turn), castling_permission, false)
 				for piece_move in valid_piece_moves:
 					var move_type = piece_move[0]
 					var valid_move = piece_move[1] 
@@ -192,7 +208,7 @@ func is_checkmate() -> bool:
 			print("King can move")
 	# Double check (only resolved by moving)
 	else:
-		var valid_king_moves = move_generator.get_valid_moves(checked_king[1], checked_king[0], board, Globals.get_opposite_color(player_turn), false)
+		var valid_king_moves = move_generator.get_valid_moves(checked_king[1], checked_king[0], board, Globals.get_opposite_color(player_turn), castling_permission, false)
 		if valid_king_moves.size() == 0:
 			add_checkmate_to_move_list()
 			return true
@@ -215,7 +231,7 @@ func is_move_king_safe(source_tile, dest_tile, color) -> bool:
 
 	var current_king = after_move_board.get_king_by_color(color)
 
-	var attacked_locations = move_generator.determineAllAttackedSquares(after_move_board, Globals.get_opposite_color(color), color)
+	var attacked_locations = move_generator.determineAllAttackedSquares(after_move_board, Globals.get_opposite_color(color), color, castling_permission)
 	for attack in attacked_locations:
 		var source_coord = attack[0]
 
@@ -291,10 +307,11 @@ func reset_in_check():
 	in_check = [false, false]
 	
 func reset_castling_permission():
-	castling_permission = [true, true, true, true]
+	castling_permission = [[true, true], [true, true]]
 	
 func reset_move_list():
 	$UI/MoveList.clear()
+	move_list_moves = 0
 
 func update_markers(valid_moves):
 	reset_markers()
@@ -323,19 +340,25 @@ func update_markers(valid_moves):
 			markers[valid_move.get_row()][valid_move.get_col()].set_color(color)
 			markers[valid_move.get_row()][valid_move.get_col()].visible = true
 
-# Note: Does not do en passant, move disambiguation, or promotion, castling, checkmate, end of game
+# Note: Does not do en passant, move disambiguation, or promotion, castling
 # Reference: https://en.wikipedia.org/wiki/Algebraic_notation_(chess)
-func add_move_to_move_list(piece, source, dest, capture, placed_in_check):
+func add_move_to_move_list(piece : Piece, source : Coord, dest : Coord, capture : bool, placed_in_check : bool, castling_side : Globals.CastlingSide):
 	
-	var final_string = null
+	var final_string = str(move_list_moves) + ": "
+	move_list_moves = move_list_moves + 1
 	if capture:
 		var piece_as_string = piece.to_string()
 		if piece_as_string == "":
-			final_string = source.get_file().to_lower() + "x" + dest.to_string()
+			final_string += source.get_file().to_lower() + "x" + dest.to_string()
 		else:
-			final_string = piece_as_string + "x" + dest.to_string()
+			final_string += piece_as_string + "x" + dest.to_string()
 	else:
-		final_string = piece.to_string() + dest.to_string()
+		if castling_side == Globals.CastlingSide.NONE:
+			final_string += piece.to_string() + dest.to_string()
+		elif castling_side == Globals.CastlingSide.KING:
+			final_string += "0-0"
+		else:
+			final_string += "0-0-0"
 		
 	if placed_in_check:
 		final_string += "+"
@@ -364,7 +387,7 @@ func handle_click(boundingRectangle, pos):
 		selected_piece = null
 	elif selected_tile != null:
 		# Check to see if the location is a valid move
-		var valid_moves = move_generator.get_valid_moves(selected_piece, selected_tile, board, get_turn(), false)
+		var valid_moves = move_generator.get_valid_moves(selected_piece, selected_tile, board, get_turn(), castling_permission, false)
 
 		var found_dest = false
 		
@@ -383,7 +406,8 @@ func handle_click(boundingRectangle, pos):
 							board.set_coord(selected_tile, null)
 							board.set_coord(new_selected_coord, selected_piece)
 							var placed_in_check = update_incheck()
-							add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, true, placed_in_check)
+							update_castling_permission(selected_piece)
+							add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, true, placed_in_check, Globals.CastlingSide.NONE)
 							selected_tile = null
 							selected_piece = null
 							reset_half_moves()
@@ -396,14 +420,17 @@ func handle_click(boundingRectangle, pos):
 							board.set_coord(selected_tile, null)
 							board.set_coord(new_selected_coord, selected_piece)
 							var placed_in_check = update_incheck()
-							add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, true, placed_in_check)
+							update_castling_permission(selected_piece)
+							add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, true, placed_in_check, Globals.CastlingSide.NONE)
 							selected_tile = null
 							selected_piece = null
 							reset_half_moves()
 							update_clock(player_turn, true)
 							flip_turn()
 							found_dest = true
-					else:
+						else:
+							assert("Found a non-attack move onto a valid piece")
+					elif move_type == MoveGenerator.MoveType.NORMAL or move_type == MoveGenerator.MoveType.NORMAL_OR_ATTACK:
 						board.set_coord(selected_tile, null)
 						board.set_coord(new_selected_coord, selected_piece)
 						
@@ -411,7 +438,35 @@ func handle_click(boundingRectangle, pos):
 							reset_half_moves()
 
 						var placed_in_check = update_incheck()
-						add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, false, placed_in_check)
+						update_castling_permission(selected_piece)
+						add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, false, placed_in_check, Globals.CastlingSide.NONE)
+						selected_tile = null
+						selected_piece = null
+						update_clock(player_turn, true)
+						flip_turn()
+						found_dest = true
+					elif move_type == MoveGenerator.MoveType.CASTLE:
+						board.set_coord(selected_tile, null)
+						board.set_coord(new_selected_coord, selected_piece)
+						
+						var type = Globals.CastlingSide.NONE
+						if new_selected_coord.get_file() == 'B':
+							var rook_coord = Coord.new(selected_tile.get_rank(), 'A')
+							var rook_destination = Coord.new(selected_tile.get_rank(), 'C')
+							var rook_piece = board.get_coord(rook_coord)
+							board.set_coord(rook_coord, null)
+							board.set_coord(rook_destination, rook_piece)
+							type = Globals.CastlingSide.QUEEN
+						else:
+							var rook_coord = Coord.new(selected_tile.get_rank(), 'H')
+							var rook_destination = Coord.new(selected_tile.get_rank(), 'F')
+							var rook_piece = board.get_coord(rook_coord)
+							board.set_coord(rook_coord, null)
+							board.set_coord(rook_destination, rook_piece)
+							type = Globals.CastlingSide.KING
+						
+						update_castling_permission(selected_piece)
+						add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, false, false, type)
 						selected_tile = null
 						selected_piece = null
 						update_clock(player_turn, true)
@@ -430,7 +485,7 @@ func handle_click(boundingRectangle, pos):
 		selected_piece = new_selected_piece
 		
 		if selected_piece != null:
-			markers_moves = move_generator.get_valid_moves(selected_piece, selected_tile, board, get_turn(), false)
+			markers_moves = move_generator.get_valid_moves(selected_piece, selected_tile, board, get_turn(), castling_permission, false)
 	
 	update_markers(markers_moves)
 
@@ -438,7 +493,7 @@ func handle_click(boundingRectangle, pos):
 
 func create_piece_from_info(position, info):
 	var piece = Piece.instantiate()
-	piece.create(info)
+	piece.create(position, info)
 	board.set_coord(position, piece)
 	$Board/Tiles.add_child(piece)
 
@@ -479,17 +534,18 @@ func initialize_from_fen(fen):
 
 		# Castling
 		for b in range(0, len(castling_permission)):
-			castling_permission[b] = false
+			castling_permission[b][Globals.CastlingSide.KING] = false
+			castling_permission[b][Globals.CastlingSide.QUEEN] = false
 
 		for c in fields[2]:
 			if c == 'K':
-				castling_permission[0] = true
+				castling_permission[Globals.PieceColor.WHITE][Globals.CastlingSide.KING] = true
 			elif c == 'Q':
-				castling_permission[1] = true
+				castling_permission[Globals.PieceColor.WHITE][Globals.CastlingSide.QUEEN] = true
 			elif c == 'k':
-				castling_permission[2] = true
+				castling_permission[Globals.PieceColor.BLACK][Globals.CastlingSide.KING] = true
 			elif c == 'q':
-				castling_permission[3] = true
+				castling_permission[Globals.PieceColor.BLACK][Globals.CastlingSide.QUEEN] = true
 
 		# TODO: Deal with en-passant
 		# Fields[3] is en passant, ignore fornow
