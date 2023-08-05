@@ -83,4 +83,4 @@ func equal(other):
 		return false
 
 func _to_string():
-	return str(get_file()).to_lower() + str(get_rank())
+	return str(get_file()).to_upper() + str(get_rank())

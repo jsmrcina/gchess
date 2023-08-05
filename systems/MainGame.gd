@@ -6,7 +6,6 @@ extends Node2D
 
 var Piece = preload("res://entities/piece.tscn")
 var TileMarker = preload("res://entities/tile_marker.tscn")
-var MoveGenerator = load("res://systems/MoveGenerator.gd")
 
 var board_enabled : bool = true
 var board : Board
@@ -30,6 +29,7 @@ func _ready():
 		markers.append([])
 		for c in range(0, Constants.BOARD_HEIGHT_IN_TILES):
 			var tileMarker = TileMarker.instantiate()
+			print("tile Marker: " + str(tileMarker.get_instance_id()))
 			tileMarker.position.x = c * Constants.TILE_WIDTH
 			tileMarker.position.y = r * Constants.TILE_HEIGHT
 			tileMarker.visible = false
@@ -343,37 +343,24 @@ func handle_click(boundingRectangle, pos):
 	
 	update_markers(markers_moves)
 
-
-
 func create_piece_from_info(position, info):
 	var piece = Piece.instantiate()
 	piece.create(position, info)
+	print("board: " + str(piece) + " " + str(piece.get_instance_id()))
 	board.set_coord(position, piece)
-	$Board/Tiles.add_child(piece)
+
+func place_piece_visuals():
+	for piece in board.get_pieces():
+		$Board/Tiles.add_child(piece[1])
 
 func initialize_from_fen(fen):
 		# First, split into the fields
 		var fields = fen.split(" ")
 
-		# The first field describes the pieces, we're going to ignore the rest for now
+		# The first field describes the pieces
 		var pieces = fields[0]
-
-		# Each row is separated by a slash
-		var rows = pieces.split("/")
-
-		# Parse each row and place pieces
-		var cur_pos = Coord.new(8, "A")
-		for row in rows:
-			for item in row:
-				if item.is_valid_int():
-					for i in range(0, int(item)):
-						cur_pos = cur_pos.get_in_direction(Globals.Direction.FILE_UP)
-				else:
-					var piece_info = Globals.piece_info_from_fen_string(item)
-					create_piece_from_info(cur_pos, piece_info)
-					cur_pos = cur_pos.get_in_direction(Globals.Direction.FILE_UP)
-			cur_pos = cur_pos.get_in_direction(Globals.Direction.RANK_DOWN)
-			cur_pos.set_file("A")
+		board.init_from_fen(pieces)
+		place_piece_visuals()
 
 		# The second field tells you whose turn it is
 		if fields[1] == 'w':
@@ -437,6 +424,7 @@ func reset_pieces():
 	create_piece_from_info(Coord.new(row, 'G'), Globals.piece_info_from_fen_string("N"))
 	create_piece_from_info(Coord.new(row, 'H'), Globals.piece_info_from_fen_string("R"))
 	
+	place_piece_visuals()
 	start_game()
 
 func _on_new_game_button_pressed():

@@ -25,6 +25,7 @@ func copy(other : Board):
 			if piece != null:
 				var piece_copy = Piece.instantiate()
 				piece_copy.copy(piece)
+				print("copy: " + str(piece) + " " + str(piece.get_instance_id()))
 				set_coord(coord, piece_copy)
 				
 	# Copy other attributes
@@ -40,6 +41,29 @@ func delete():
 			
 			if piece != null:
 				piece.queue_free()
+
+func init_from_fen(pieces : String):
+	# Each row is separated by a slash
+	var rows = pieces.split("/")
+
+	# Parse each row and place pieces
+	var cur_pos = Coord.new(8, "A")
+	for row in rows:
+		for item in row:
+			if item.is_valid_int():
+				for i in range(0, int(item)):
+					cur_pos = cur_pos.get_in_direction(Globals.Direction.FILE_UP)
+			else:
+				var piece_info = Globals.piece_info_from_fen_string(item)
+				
+				var piece = Piece.instantiate()
+				piece.create(cur_pos, piece_info)
+				print("create from fen: " + str(piece) + " " + str(piece.get_instance_id()))
+				set_coord(cur_pos, piece)
+				
+				cur_pos = cur_pos.get_in_direction(Globals.Direction.FILE_UP)
+		cur_pos = cur_pos.get_in_direction(Globals.Direction.RANK_DOWN)
+		cur_pos.set_file("A")
 
 func reset_in_check():
 	in_check = [false, false]
@@ -227,6 +251,18 @@ func take_piece(coord):
 
 func get_coord(coord):
 	return board[coord.get_row()][coord.get_col()]
+
+func get_pieces():
+	var pieces = []
+
+	for c in range(1, get_width() + 1):
+		for r in range(get_height(), 0, -1):
+			var piece_coord = Coord.new(r, Coord.file_from_col(c - 1))
+			var piece_at_coord = get_coord(piece_coord)
+			if piece_at_coord != null:
+				pieces.append([piece_coord, piece_at_coord])
+
+	return pieces
 
 func get_pieces_by_color(color):
 	var pieces = []
