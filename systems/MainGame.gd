@@ -11,9 +11,6 @@ var MoveGenerator = load("res://systems/MoveGenerator.gd")
 var board_enabled : bool = true
 var board : Board
 var markers : Array = []
-var player_turn : Globals.PieceColor
-var in_check : Array[bool] = [false, false]
-var castling_permission : Array = [[true, true], [true, true]] # King / Queen side
 var half_moves : int = 0
 var full_moves : int = 1
 var move_list_moves : int = 0
@@ -39,7 +36,7 @@ func _ready():
 			$Board/Tiles/Markers.add_child(tileMarker)
 			markers[r].append(tileMarker)
 	
-	player_turn = Globals.PieceColor.WHITE
+	board.set_player_turn(Globals.PieceColor.WHITE)
 	update_clock(Globals.PieceColor.WHITE, false)
 	update_clock(Globals.PieceColor.BLACK, false)
 	
@@ -65,67 +62,33 @@ func _process(delta):
 			handle_click(bounding_rectangle, position)
 
 	if board_enabled:
-		var ran_out_of_time = update_clock(player_turn, false)
+		var ran_out_of_time = update_clock(board.get_player_turn(), false)
 		if ran_out_of_time:
 			board_enabled = false
 			# If we run out of time, the other player wins
-			add_score_to_move_list(Globals.get_opposite_color(player_turn))
+			add_score_to_move_list(Globals.get_opposite_color(board.get_player_turn()))
 			$UI/Clock/WhiteTurnMarker.visible = false
 			$UI/Clock/BlackTurnMarker.visible = false
 			$Board/Control/GameOver.visible = true
 
 func start_game():
-	player_turn = Globals.PieceColor.WHITE
+	board.set_player_turn(Globals.PieceColor.WHITE)
 	reset_clock()
 	update_clock(Globals.PieceColor.WHITE, false)
 	update_clock(Globals.PieceColor.BLACK, false)
 	reset_half_moves()
 	reset_full_moves()
 	reset_markers()
-	reset_in_check()
-	reset_castling_permission()
+	board.reset_in_check()
+	board.reset_castling_permission()
 	reset_move_list()
 	$UI/Clock/WhiteTurnMarker.visible = true
 	$UI/Clock/BlackTurnMarker.visible = false
 	$Board/Control/GameOver.visible = false
 	board_enabled = true
 
-func get_turn():
-	return player_turn
-
-func update_incheck() -> bool:
-	in_check[Globals.PieceColor.WHITE] = false
-	in_check[Globals.PieceColor.BLACK] = false
-
-	var attacked_locations = move_generator.determineAllAttackedSquares(board, player_turn, player_turn, castling_permission)
-	for attack in attacked_locations:
-		var source_coord = attack[0]
-		var piece_at_source = attack[1]
-		var move_type = attack[2]
-		var destination_coord = attack[3]
-		var piece_at_attacked_location = board.get_coord(destination_coord)
-		if piece_at_attacked_location != null:
-			if piece_at_attacked_location.get_type() == Globals.PieceType.KING and piece_at_attacked_location.get_color() == Globals.get_opposite_color(
-					player_turn):
-				in_check[Globals.get_opposite_color(player_turn)] = true
-				return true
-
-	return false
-
-func update_castling_permission(moved_piece : Piece):
-	# If you move your king, both types are not permitted
-	if moved_piece.get_type() == Globals.PieceType.KING:
-		castling_permission[Globals.get_opposite_color(player_turn)][Globals.CastlingSide.KING] = false
-		castling_permission[Globals.get_opposite_color(player_turn)][Globals.CastlingSide.QUEEN] = false
-	
-	# If you move a rook, you cannot castle that side any longer
-	if moved_piece.get_type() == Globals.PieceType.ROOK:
-		if moved_piece.get_starting_file_position() == 'A':
-			castling_permission[Globals.get_opposite_color(player_turn)][Globals.CastlingSide.QUEEN] = false
-		else:
-			castling_permission[Globals.get_opposite_color(player_turn)][Globals.CastlingSide.KING] = false
-
-	print(str(castling_permission))
+#func get_turn():
+#	return player_turn
 
 func add_checkmate_to_move_list():
 	var idx = $UI/MoveList.add_item("#")
@@ -139,107 +102,6 @@ func add_score_to_move_list(white_wins):
 	else:
 		var idx = $UI/MoveList.add_item("0-1")
 		$UI/MoveList.set_item_disabled(idx, true)
-
-func is_checkmate() -> bool:
-	if !(in_check[0] || in_check[1]):
-		return false
-
-	var attacks_participating_in_check : Array = []
-	var checked_king = board.get_king_by_color(Globals.get_opposite_color(player_turn))
-	
-	# Find all attacks participating in this check
-	var attacked_locations = move_generator.determineAllAttackedSquares(board, player_turn, player_turn, castling_permission)
-	for attack in attacked_locations:
-		var source_coord = attack[0]
-		var piece_at_source = attack[1]
-		var move_type = attack[2]
-		var destination_coord = attack[3]
-		if destination_coord.equal(checked_king[0]):
-			attacks_participating_in_check.append(attack)
-	
-	for attack in attacks_participating_in_check:
-		var source_coord = attack[0]
-		var piece_at_source = attack[1]
-		var move_type = attack[2]
-		var destination_coord = attack[3]
-	
-	# Single check
-	if attacks_participating_in_check.size() == 1:
-		# Can the king move?
-		var valid_king_moves = move_generator.get_valid_moves(checked_king[1], checked_king[0], board, Globals.get_opposite_color(player_turn), castling_permission, false)
-		if valid_king_moves.size() == 0:
-			var attacking_piece_coord = attacks_participating_in_check[0][0]
-			var attacking_piece = attacks_participating_in_check[0][1]
-			var valid_attacker_moves = move_generator.get_valid_moves(attacking_piece, attacking_piece_coord, board, player_turn, castling_permission, false)
-			
-			# Can someone intercept or take the piece
-			for piece_tuple in board.get_pieces_by_color(Globals.get_opposite_color(player_turn)):
-				var piece_coord = piece_tuple[0]
-				var piece = piece_tuple[1]
-				var valid_piece_moves = move_generator.get_valid_moves(piece, piece_coord, board, Globals.get_opposite_color(player_turn), castling_permission, false)
-				for piece_move in valid_piece_moves:
-					var move_type = piece_move[0]
-					var valid_move = piece_move[1] 
-					if (move_type == MoveGenerator.MoveType.NORMAL_OR_ATTACK or move_type == MoveGenerator.MoveType.ATTACK) and valid_move.equal(attacking_piece_coord):
-						# We can take the piece!
-						print("Piece can (at least) be taken by " + piece.to_readable_string())
-						return false
-					else:
-						# FIXME: This is ungodly slow -- need to think about this more
-						for attacker_move in valid_attacker_moves:
-							var attacker_move_type = attacker_move[0]
-							var attacker_valid_move = attacker_move[1]
-							if (move_type == MoveGenerator.MoveType.NORMAL_OR_ATTACK or move_type == MoveGenerator.MoveType.NORMAL) and valid_move.equal(attacker_valid_move):
-								# Check to see if the king is safe after the move
-								if is_move_king_safe(piece_coord, valid_move, Globals.get_opposite_color(player_turn)):
-									print("Piece can (at least) be intercepted by " + piece.to_readable_string() + " at " + str(piece_coord) + " to " + str(attacker_valid_move))
-									return false
-								
-			# If we get here, this is a single check with no way to intercept or to take the piece.
-			add_checkmate_to_move_list()
-			return true
-		else:
-			for move in valid_king_moves:
-				var move_type = move[0]
-				var valid_move = move[1] 
-				print(str(move_type) + " " + str(valid_move))
-			print("King can move")
-	# Double check (only resolved by moving)
-	else:
-		var valid_king_moves = move_generator.get_valid_moves(checked_king[1], checked_king[0], board, Globals.get_opposite_color(player_turn), castling_permission, false)
-		if valid_king_moves.size() == 0:
-			add_checkmate_to_move_list()
-			return true
-			
-	return false
-
-func is_move_king_safe(source_tile, dest_tile, color) -> bool:
-	var king_safe = true
-	var after_move_board = Board.new()
-	after_move_board.copy(board)
-	
-	# Perform the move on our new board
-	var valid_move_destination_piece = after_move_board.get_coord(dest_tile)
-	if valid_move_destination_piece != null:
-		after_move_board.take_piece(dest_tile)
-
-	var moving_piece = after_move_board.get_coord(source_tile)
-	after_move_board.set_coord(source_tile, null)
-	after_move_board.set_coord(dest_tile, moving_piece)
-
-	var current_king = after_move_board.get_king_by_color(color)
-
-	var attacked_locations = move_generator.determineAllAttackedSquares(after_move_board, Globals.get_opposite_color(color), color, castling_permission)
-	for attack in attacked_locations:
-		var source_coord = attack[0]
-
-		var destination_coord = attack[3]
-		if destination_coord.equal(current_king[0]):
-			king_safe = false
-			break
-
-	after_move_board.delete()
-	return king_safe
 
 func reset_clock():
 	start_turn_time = -1
@@ -272,18 +134,19 @@ func update_clock(clock_color, turn_over):
 	return ran_out_of_time
 
 func flip_turn():
-	if is_checkmate():
+	if board.is_checkmate(move_generator):
 		board_enabled = false
+		add_checkmate_to_move_list()
 		add_score_to_move_list(true)
 		$Board/Control/GameOver.visible = true
 	else:
-		if player_turn == Globals.PieceColor.WHITE:
-			player_turn = Globals.PieceColor.BLACK
+		if board.get_player_turn() == Globals.PieceColor.WHITE:
+			board.set_player_turn(Globals.PieceColor.BLACK)
 			$UI/Clock/WhiteTurnMarker.visible = false
 			$UI/Clock/BlackTurnMarker.visible = true
 		else:
 			full_moves = full_moves + 1
-			player_turn = Globals.PieceColor.WHITE
+			board.set_player_turn(Globals.PieceColor.WHITE)
 			$UI/Clock/WhiteTurnMarker.visible = true
 			$UI/Clock/BlackTurnMarker.visible = false
 
@@ -300,13 +163,7 @@ func reset_markers():
 	for row in markers:
 		for marker in row:
 			marker.visible = false
-			
-func reset_in_check():
-	in_check = [false, false]
-	
-func reset_castling_permission():
-	castling_permission = [[true, true], [true, true]]
-	
+
 func reset_move_list():
 	$UI/MoveList.clear()
 	move_list_moves = 0
@@ -329,7 +186,7 @@ func update_markers(valid_moves):
 			elif move_type == MoveGenerator.MoveType.NORMAL_OR_ATTACK:
 				var destination_piece = board.get_coord(valid_move)
 				if destination_piece != null:
-					if destination_piece.get_color() == Globals.get_opposite_color(player_turn):
+					if destination_piece.get_color() == Globals.get_opposite_color(board.get_player_turn()):
 						color = Color.ORANGE_RED
 					else:
 						# This is our own piece, we can't move here
@@ -385,8 +242,7 @@ func handle_click(boundingRectangle, pos):
 		selected_piece = null
 	elif selected_tile != null:
 		# Check to see if the location is a valid move
-		var valid_moves = move_generator.get_valid_moves(selected_piece, selected_tile, board, get_turn(), castling_permission, false)
-
+		var valid_moves = move_generator.get_valid_moves_for_current_player(selected_piece, selected_tile, board, false)
 		var found_dest = false
 		
 		for item in valid_moves:
@@ -394,7 +250,7 @@ func handle_click(boundingRectangle, pos):
 			var valid_move = item[1] 
 
 			if valid_move.equal(new_selected_coord):
-				var king_safe = is_move_king_safe(selected_tile, new_selected_coord, player_turn)
+				var king_safe = board.is_move_king_safe(move_generator, selected_tile, new_selected_coord)
 				if king_safe:
 					var valid_move_destination_piece = board.get_coord(new_selected_coord)
 					if valid_move_destination_piece != null:
@@ -403,13 +259,13 @@ func handle_click(boundingRectangle, pos):
 							board.take_piece(new_selected_coord)
 							board.set_coord(selected_tile, null)
 							board.set_coord(new_selected_coord, selected_piece)
-							var placed_in_check = update_incheck()
-							update_castling_permission(selected_piece)
+							var placed_in_check = board.update_incheck(move_generator)
+							board.update_castling_permission(selected_piece)
 							add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, true, placed_in_check, Globals.CastlingSide.NONE)
 							selected_tile = null
 							selected_piece = null
 							reset_half_moves()
-							update_clock(player_turn, true)
+							update_clock(board.get_player_turn(), true)
 							flip_turn()
 							found_dest = true
 						elif move_type == MoveGenerator.MoveType.NORMAL_OR_ATTACK and Globals.get_opposite_color(
@@ -417,13 +273,13 @@ func handle_click(boundingRectangle, pos):
 							board.take_piece(new_selected_coord)
 							board.set_coord(selected_tile, null)
 							board.set_coord(new_selected_coord, selected_piece)
-							var placed_in_check = update_incheck()
-							update_castling_permission(selected_piece)
+							var placed_in_check = board.update_incheck(move_generator)
+							board.update_castling_permission(selected_piece)
 							add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, true, placed_in_check, Globals.CastlingSide.NONE)
 							selected_tile = null
 							selected_piece = null
 							reset_half_moves()
-							update_clock(player_turn, true)
+							update_clock(board.get_player_turn(), true)
 							flip_turn()
 							found_dest = true
 						else:
@@ -435,12 +291,12 @@ func handle_click(boundingRectangle, pos):
 						if selected_piece.get_type() == Globals.PieceType.PAWN:
 							reset_half_moves()
 
-						var placed_in_check = update_incheck()
-						update_castling_permission(selected_piece)
+						var placed_in_check = board.update_incheck(move_generator)
+						board.update_castling_permission(selected_piece)
 						add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, false, placed_in_check, Globals.CastlingSide.NONE)
 						selected_tile = null
 						selected_piece = null
-						update_clock(player_turn, true)
+						update_clock(board.get_player_turn(), true)
 						flip_turn()
 						found_dest = true
 					elif move_type == MoveGenerator.MoveType.CASTLE:
@@ -463,11 +319,11 @@ func handle_click(boundingRectangle, pos):
 							board.set_coord(rook_destination, rook_piece)
 							type = Globals.CastlingSide.KING
 						
-						update_castling_permission(selected_piece)
+						board.update_castling_permission(selected_piece)
 						add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, false, false, type)
 						selected_tile = null
 						selected_piece = null
-						update_clock(player_turn, true)
+						update_clock(board.get_player_turn(), true)
 						flip_turn()
 						found_dest = true
 
@@ -478,12 +334,12 @@ func handle_click(boundingRectangle, pos):
 			# Player selected an invalid destination for this move
 			selected_tile = null
 			selected_piece = null
-	elif new_selected_piece != null and new_selected_piece.get_color() == player_turn:
+	elif new_selected_piece != null and new_selected_piece.get_color() == board.get_player_turn():
 		selected_tile = new_selected_coord
 		selected_piece = new_selected_piece
 		
 		if selected_piece != null:
-			markers_moves = move_generator.get_valid_moves(selected_piece, selected_tile, board, get_turn(), castling_permission, false)
+			markers_moves = move_generator.get_valid_moves_for_current_player(selected_piece, selected_tile, board, false)
 	
 	update_markers(markers_moves)
 
@@ -521,29 +377,17 @@ func initialize_from_fen(fen):
 
 		# The second field tells you whose turn it is
 		if fields[1] == 'w':
-			player_turn = Globals.PieceColor.WHITE
+			board.set_player_turn(Globals.PieceColor.WHITE)
 			$UI/Clock/WhiteTurnMarker.visible = true
 			$UI/Clock/BlackTurnMarker.visible = false
 		elif fields[1] == 'b':
 			#print("Black turn")
-			player_turn = Globals.PieceColor.BLACK
+			board.set_player_turn(Globals.PieceColor.BLACK)
 			$UI/Clock/WhiteTurnMarker.visible = false
 			$UI/Clock/BlackTurnMarker.visible = true
 
 		# Castling
-		for b in range(0, len(castling_permission)):
-			castling_permission[b][Globals.CastlingSide.KING] = false
-			castling_permission[b][Globals.CastlingSide.QUEEN] = false
-
-		for c in fields[2]:
-			if c == 'K':
-				castling_permission[Globals.PieceColor.WHITE][Globals.CastlingSide.KING] = true
-			elif c == 'Q':
-				castling_permission[Globals.PieceColor.WHITE][Globals.CastlingSide.QUEEN] = true
-			elif c == 'k':
-				castling_permission[Globals.PieceColor.BLACK][Globals.CastlingSide.KING] = true
-			elif c == 'q':
-				castling_permission[Globals.PieceColor.BLACK][Globals.CastlingSide.QUEEN] = true
+		board.set_castling_permission_from_fen_string(fields[2])
 
 		# TODO: Deal with en-passant
 		# Fields[3] is en passant, ignore fornow

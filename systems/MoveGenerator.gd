@@ -113,13 +113,13 @@ func addMovesInDirection(piece : Piece, board, location : Coord, direction : Glo
 
 # Returns an array in the shape of [source_coord, piece_at_source, [[move_type, destination_coord], ...]]
 # Which contains all squares attacked by the passed color
-func determineAllAttackedSquares(board : Board, color : Globals.PieceColor, turn : Globals.PieceColor, castling_permission: Array):
+func determineAllAttackedSquares(board : Board, color : Globals.PieceColor):
 	var pieces = board.get_pieces_by_color(color)
 	var allPossibleMovesByColor = []
 	for item in pieces:
 		var coord = item[0]
 		var piece_at_coord = item[1]
-		var piece_with_moves = [coord, piece_at_coord, [get_valid_moves(piece_at_coord, coord, board, turn, castling_permission, true)]]
+		var piece_with_moves = [coord, piece_at_coord, [get_valid_moves(piece_at_coord, coord, board, color, true)]]
 		allPossibleMovesByColor += [piece_with_moves]
 
 	var allAttackMovesByColor = []
@@ -152,10 +152,10 @@ func determinePossiblePawnMoves(piece : Piece, location : Coord, board : Board, 
 		addAttackMoveIfEnemy(location, board, east_diag_step, possible_moves)
 		addAttackMoveIfEnemy(location, board, west_diag_step, possible_moves)
 
-func determinePossibleKingMoves(piece : Piece, location : Coord, board : Board, turn : Globals.PieceColor, castling_permission : Array, include_all_attacks : bool, possible_moves : Array):
+func determinePossibleKingMoves(piece : Piece, location : Coord, board : Board, color : Globals.PieceColor, include_all_attacks : bool, possible_moves : Array):
 	var attacked_locations = []
-	if piece.get_color() == turn:
-		attacked_locations = determineAllAttackedSquares(board, Globals.get_opposite_color(turn), turn, castling_permission)
+	if piece.get_color() == board.get_player_turn():
+		attacked_locations = determineAllAttackedSquares(board, Globals.get_opposite_color(color))
 
 	for d in Direction:
 		var d_as_int = Direction[d]
@@ -163,7 +163,7 @@ func determinePossibleKingMoves(piece : Piece, location : Coord, board : Board, 
 
 	# If we can castle, show that as an option
 	var rank = 1
-	if turn == Globals.PieceColor.BLACK:
+	if color == Globals.PieceColor.BLACK:
 		rank = 8
 
 	var rookCoord = Coord.new(rank, 'H')
@@ -171,25 +171,27 @@ func determinePossibleKingMoves(piece : Piece, location : Coord, board : Board, 
 	var bishopCoord = Coord.new(rank, 'F')
 	var kingCoord = Coord.new(rank, 'E')
 	var queenCoord = Coord.new(rank, 'D')
-	if castling_permission[turn][Globals.CastlingSide.KING]:
+	var castling_permission = board.get_castling_permission()
+	
+	if castling_permission[color][Globals.CastlingSide.KING]:
 		var knightExists = (board.get_coord(knightCoord) != null)
 		var bishopExists = (board.get_coord(bishopCoord) != null)
 		if !knightExists and !bishopExists:
 			# Check to see if any of the pieces is under attack
 			var checkCoords = [rookCoord, knightCoord, bishopCoord, kingCoord]
 			if not anyAttacked(attacked_locations, checkCoords):
-				addCastlingMove(board, turn, Globals.CastlingSide.KING, possible_moves)
+				addCastlingMove(board, color, Globals.CastlingSide.KING, possible_moves)
 			else:
 				print("Cannot castle king-side, something is under attack")
 	
-	if castling_permission[turn][Globals.CastlingSide.QUEEN]:
+	if castling_permission[color][Globals.CastlingSide.QUEEN]:
 		var bishopExists = (board.get_coord(bishopCoord) != null)
 		var knightExists = (board.get_coord(knightCoord) != null)
 		var queenExists = (board.get_coord(queenCoord) != null)
 		if !knightExists and !bishopExists and !queenExists:
 			var checkCoords = [rookCoord, knightCoord, bishopCoord, kingCoord, queenCoord]
 			if not anyAttacked(attacked_locations, checkCoords):
-				addCastlingMove(board, turn, Globals.CastlingSide.QUEEN, possible_moves)
+				addCastlingMove(board, color, Globals.CastlingSide.QUEEN, possible_moves)
 			else:
 				print("Cannot castle queen-side, something is under attack")
 
@@ -223,13 +225,19 @@ func determinePossibleKnightMoves(piece : Piece, location : Coord, board : Board
 			var oneInRank = twoInFile.get_in_direction(f)
 			addNormalOrAttackMove(board, oneInRank, possible_moves)
 
-func get_valid_moves(piece : Piece, location : Coord, board : Board, turn : Globals.PieceColor, castling_permission : Array, include_all_attacks : bool):
+func get_valid_moves_for_current_player(piece : Piece, location : Coord, board : Board, include_all_attacks : bool):
+	return get_valid_moves(piece, location, board, board.get_player_turn(), include_all_attacks)
+
+func get_valid_moves_for_opposite_player(piece : Piece, location : Coord, board : Board, include_all_attacks : bool):
+	return get_valid_moves(piece, location, board, Globals.get_opposite_color(board.get_player_turn()), include_all_attacks)
+
+func get_valid_moves(piece : Piece, location : Coord, board : Board, color : Globals.PieceColor, include_all_attacks : bool):
 	var possible_moves = []
 
 	if piece.get_type() == PieceType.PAWN:
 		determinePossiblePawnMoves(piece, location, board, include_all_attacks, possible_moves)
 	elif piece.get_type() == PieceType.KING:
-		determinePossibleKingMoves(piece, location, board, turn, castling_permission, include_all_attacks, possible_moves)
+		determinePossibleKingMoves(piece, location, board, color, include_all_attacks, possible_moves)
 	if piece.get_type() == PieceType.QUEEN:
 		determinePossibleQueenMoves(piece, location, board, include_all_attacks, possible_moves)
 	if piece.get_type() == PieceType.ROOK:
