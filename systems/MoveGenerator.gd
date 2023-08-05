@@ -67,7 +67,7 @@ func addNormalOrAttackMoveIfNotAttacked(board : Board, new_move : Coord, possibl
 			break
 
 	if not is_attacked:
-		if board.get_coord(new_move) == null:
+		if board.get_coord(new_move) == null or board.get_coord(new_move).get_color() == Globals.get_opposite_color(board.get_player_turn()):
 			possible_moves.append([MoveType.NORMAL_OR_ATTACK, new_move])
 
 func addNormalOrAttackMove(board : Board, new_move : Coord, possible_moves : Array):
