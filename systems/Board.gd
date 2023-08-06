@@ -171,15 +171,15 @@ func update_incheck(move_generator : MoveGenerator) -> bool:
 func update_castling_permission(moved_piece : Piece):
 	# If you move your king, both types are not permitted
 	if moved_piece.get_type() == Globals.PieceType.KING:
-		castling_permission[Globals.get_opposite_color(player_turn)][Globals.CastlingSide.KING] = false
-		castling_permission[Globals.get_opposite_color(player_turn)][Globals.CastlingSide.QUEEN] = false
+		castling_permission[player_turn][Globals.CastlingSide.KING] = false
+		castling_permission[player_turn][Globals.CastlingSide.QUEEN] = false
 	
 	# If you move a rook, you cannot castle that side any longer
 	if moved_piece.get_type() == Globals.PieceType.ROOK:
 		if moved_piece.get_starting_file_position() == 'A':
-			castling_permission[Globals.get_opposite_color(player_turn)][Globals.CastlingSide.QUEEN] = false
+			castling_permission[player_turn][Globals.CastlingSide.QUEEN] = false
 		else:
-			castling_permission[Globals.get_opposite_color(player_turn)][Globals.CastlingSide.KING] = false
+			castling_permission[player_turn][Globals.CastlingSide.KING] = false
 
 	print(str(castling_permission))
 

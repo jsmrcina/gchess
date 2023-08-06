@@ -447,7 +447,6 @@ func animate_piece_move(source_tile, destination_tile, piece):
 
 		
 		piece.position = lerp(Vector2(sourceX, sourceY), Vector2(destX, destY), i)
-		print("X")
 		await get_tree().create_timer(0.001).timeout
 		i = i + 0.03
 	

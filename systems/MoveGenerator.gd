@@ -164,7 +164,7 @@ func determinePossibleKingMoves(piece : Piece, location : Coord, board : Board, 
 
 	# If we can castle, show that as an option
 	var rank = 1
-	if color == Globals.PieceColor.BLACK:
+	if piece.get_color() == Globals.PieceColor.BLACK:
 		rank = 8
 
 	var rookCoord = Coord.new(rank, 'H')
@@ -174,23 +174,23 @@ func determinePossibleKingMoves(piece : Piece, location : Coord, board : Board, 
 	var queenCoord = Coord.new(rank, 'D')
 	var castling_permission = board.get_castling_permission()
 	
-	if castling_permission[color][Globals.CastlingSide.KING]:
+	if castling_permission[piece.get_color()][Globals.CastlingSide.KING]:
 		var knightExists = (board.get_coord(knightCoord) != null)
 		var bishopExists = (board.get_coord(bishopCoord) != null)
 		if !knightExists and !bishopExists:
 			# Check to see if any of the pieces is under attack
 			var checkCoords = [rookCoord, knightCoord, bishopCoord, kingCoord]
 			if not anyAttacked(attacked_locations, checkCoords):
-				addCastlingMove(board, color, Globals.CastlingSide.KING, possible_moves)
+				addCastlingMove(board, piece.get_color(), Globals.CastlingSide.KING, possible_moves)
 	
-	if castling_permission[color][Globals.CastlingSide.QUEEN]:
+	if castling_permission[piece.get_color()][Globals.CastlingSide.QUEEN]:
 		var bishopExists = (board.get_coord(bishopCoord) != null)
 		var knightExists = (board.get_coord(knightCoord) != null)
 		var queenExists = (board.get_coord(queenCoord) != null)
 		if !knightExists and !bishopExists and !queenExists:
 			var checkCoords = [rookCoord, knightCoord, bishopCoord, kingCoord, queenCoord]
 			if not anyAttacked(attacked_locations, checkCoords):
-				addCastlingMove(board, color, Globals.CastlingSide.QUEEN, possible_moves)
+				addCastlingMove(board, piece.get_color(), Globals.CastlingSide.QUEEN, possible_moves)
 
 func determinePossibleQueenMoves(piece : Piece, location : Coord, board : Board, include_all_attacks : bool, possible_moves : Array):
 	for d in Direction:
