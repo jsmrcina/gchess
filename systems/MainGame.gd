@@ -76,7 +76,7 @@ func _process(delta):
 			add_score_to_move_list(Globals.get_opposite_color(board.get_player_turn()))
 			$UI/Clock/WhiteTurnMarker.visible = false
 			$UI/Clock/BlackTurnMarker.visible = false
-			$Board/Control/CenterContainer/GameOver.visible = true
+			$Board/Control/GameOverContainer.visible = true
 
 func start_game():
 	board.set_player_turn(Globals.PieceColor.WHITE)
@@ -91,7 +91,7 @@ func start_game():
 	reset_move_list()
 	$UI/Clock/WhiteTurnMarker.visible = true
 	$UI/Clock/BlackTurnMarker.visible = false
-	$Board/Control/CenterContainer/GameOver.visible = false
+	$Board/Control/GameOverContainer.visible = false
 	board_enabled = true
 
 #func get_turn():
@@ -363,6 +363,10 @@ func place_piece_visuals():
 func initialize_from_fen(fen):
 		# First, split into the fields
 		var fields = fen.split(" ")
+		
+		if fields.size() != 6:
+			# TODO: Show error
+			return
 
 		# The first field describes the pieces
 		var pieces = fields[0]
@@ -438,17 +442,24 @@ func _on_new_game_button_pressed():
 	reset_pieces()
 	start_game()
 
-
 func _on_export_to_fen_pressed_button():
-	$Board/Control/CenterContainer.visible = true
-	$Board/Control/CenterContainer/FENCopy.text = "Click to copy and close:\n\n" + board.export_to_fen()
-	$Board/Control/CenterContainer/FENCopy.visible = true
+	$Board/Control/FENCopyContainer.visible = true
+	$Board/Control/FENCopyContainer/FENCopy.text = "Click to copy and close:\n\n" + board.export_to_fen()
 	board_enabled = false
+
+func _on_import_from_fen_pressed_button():
+	$Board/Control/FENEditContainer.visible = true
+	board_enabled = false
+
+func _on_do_import_pressed():
+	$Board/Control/FENEditContainer.visible = false
+	# TODO: Do Validation
+	initialize_from_fen($Board/Control/FENEditContainer/VBoxContainer/FENEdit.text)
+	hide_overlay = true
 
 func _on_fen_copy_gui_input(event):
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		var line = $Board/Control/CenterContainer/FENCopy.text.split("\n")
+		var line = $Board/Control/FENCopyContainer/FENCopy.text.split("\n")
 		DisplayServer.clipboard_set(line[2])
-		$Board/Control/CenterContainer.visible = false
-		$Board/Control/CenterContainer/FENCopy.visible = false
+		$Board/Control/FENCopyContainer.visible = false
 		hide_overlay = true

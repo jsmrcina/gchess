@@ -195,7 +195,7 @@ text = "H"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CenterContainer" type="CenterContainer" parent="Board/Control"]
+[node name="FENCopyContainer" type="CenterContainer" parent="Board/Control"]
 visible = false
 z_index = 2
 layout_mode = 0
@@ -203,43 +203,74 @@ offset_right = 1056.0
 offset_bottom = 200.0
 mouse_filter = 0
 
-[node name="ColorRect" type="ColorRect" parent="Board/Control/CenterContainer"]
+[node name="ColorRect" type="ColorRect" parent="Board/Control/FENCopyContainer"]
 custom_minimum_size = Vector2(1056, 200)
 layout_mode = 2
 color = Color(0.13, 0.13, 0.13, 1)
 
-[node name="GameOver" type="Label" parent="Board/Control/CenterContainer"]
-visible = false
-z_index = 2
-layout_mode = 2
-text = "Game Over!"
-label_settings = SubResource("LabelSettings_7gmj6")
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="FENEdit" type="TextEdit" parent="Board/Control/CenterContainer"]
-visible = false
-custom_minimum_size = Vector2(800, 100)
-layout_mode = 2
-auto_translate = false
-localize_numeral_system = false
-tooltip_text = "Click Here To Copy FEN To Clipboard"
-text = "ASDASDASDSD"
-editable = false
-virtual_keyboard_enabled = false
-middle_mouse_paste_enabled = false
-caret_move_on_right_click = false
-caret_mid_grapheme = false
-caret_multiple = false
-
-[node name="FENCopy" type="Label" parent="Board/Control/CenterContainer"]
-visible = false
+[node name="FENCopy" type="Label" parent="Board/Control/FENCopyContainer"]
 custom_minimum_size = Vector2(800, 100)
 layout_mode = 2
 mouse_filter = 0
 text = "Click to copy and close:
 
 kq6/8/8/3R4/8/5Q2/8/7K"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="FENEditContainer" type="CenterContainer" parent="Board/Control"]
+visible = false
+z_index = 2
+layout_mode = 0
+offset_right = 1056.0
+offset_bottom = 200.0
+mouse_filter = 0
+
+[node name="ColorRect" type="ColorRect" parent="Board/Control/FENEditContainer"]
+custom_minimum_size = Vector2(1056, 200)
+layout_mode = 2
+color = Color(0.13, 0.13, 0.13, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Board/Control/FENEditContainer"]
+layout_mode = 2
+
+[node name="FENEdit" type="TextEdit" parent="Board/Control/FENEditContainer/VBoxContainer"]
+custom_minimum_size = Vector2(800, 100)
+layout_mode = 2
+auto_translate = false
+localize_numeral_system = false
+placeholder_text = "Paste FEN Here"
+context_menu_enabled = false
+deselect_on_focus_loss_enabled = false
+virtual_keyboard_enabled = false
+middle_mouse_paste_enabled = false
+caret_move_on_right_click = false
+caret_mid_grapheme = false
+caret_multiple = false
+
+[node name="DoImport" type="Button" parent="Board/Control/FENEditContainer/VBoxContainer"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+text = "Initialize From FEN"
+
+[node name="GameOverContainer" type="CenterContainer" parent="Board/Control"]
+visible = false
+z_index = 2
+layout_mode = 0
+offset_right = 1056.0
+offset_bottom = 200.0
+mouse_filter = 0
+
+[node name="ColorRect" type="ColorRect" parent="Board/Control/GameOverContainer"]
+custom_minimum_size = Vector2(1056, 200)
+layout_mode = 2
+color = Color(0.13, 0.13, 0.13, 1)
+
+[node name="GameOver" type="Label" parent="Board/Control/GameOverContainer"]
+z_index = 2
+layout_mode = 2
+text = "Game Over!"
+label_settings = SubResource("LabelSettings_7gmj6")
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -283,6 +314,14 @@ offset_top = 40.0
 offset_right = 400.0
 offset_bottom = 72.0
 text = "Export To FEN"
+
+[node name="ImportFromFEN" type="Button" parent="UI"]
+layout_mode = 0
+offset_left = 250.0
+offset_top = 80.0
+offset_right = 400.0
+offset_bottom = 112.0
+text = "Import From FEN"
 
 [node name="Clock" type="Control" parent="UI"]
 layout_mode = 3
@@ -350,6 +389,8 @@ script = ExtResource("3_bjd1x")
 [node name="MoveGenerator" type="Node" parent="."]
 script = ExtResource("5_68qmr")
 
-[connection signal="gui_input" from="Board/Control/CenterContainer/FENCopy" to="." method="_on_fen_copy_gui_input"]
+[connection signal="gui_input" from="Board/Control/FENCopyContainer/FENCopy" to="." method="_on_fen_copy_gui_input"]
+[connection signal="pressed" from="Board/Control/FENEditContainer/VBoxContainer/DoImport" to="." method="_on_do_import_pressed"]
 [connection signal="pressed" from="UI/NewGame" to="." method="_on_new_game_button_pressed"]
 [connection signal="pressed" from="UI/ExportToFEN" to="." method="_on_export_to_fen_pressed_button"]
+[connection signal="pressed" from="UI/ImportFromFEN" to="." method="_on_import_from_fen_pressed_button"]
