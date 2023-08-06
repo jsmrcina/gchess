@@ -52,8 +52,8 @@ func anyAttacked(attacked_locations : Array, check_list : Array) -> bool:
 
 	return false
 
-func addNormalOrAttackMoveIfNotAttacked(board : Board, new_move : Coord, possible_moves : Array, attacked_locations : Array):
-	if not new_move.is_on_board():
+func addNormalOrAttackMoveIfNotAttacked(board : Board, source_tile : Coord, dest_tile : Coord, possible_moves : Array, attacked_locations : Array):
+	if not dest_tile.is_on_board():
 		return
 
 	var is_attacked = false
@@ -62,13 +62,13 @@ func addNormalOrAttackMoveIfNotAttacked(board : Board, new_move : Coord, possibl
 		var piece_at_source = attack[1]
 		var move_type = attack[2]
 		var destination_coord = attack[3]
-		if new_move.equal(destination_coord):
+		if dest_tile.equal(destination_coord):
 			is_attacked = true
 			break
 
 	if not is_attacked:
-		if board.get_coord(new_move) == null or board.get_coord(new_move).get_color() == Globals.get_opposite_color(board.get_player_turn()):
-			possible_moves.append([MoveType.NORMAL_OR_ATTACK, new_move])
+		if board.get_coord(dest_tile) == null or board.get_coord(dest_tile).get_color() == Globals.get_opposite_color(board.get_player_turn()):
+			possible_moves.append([MoveType.NORMAL_OR_ATTACK, dest_tile])
 
 func addNormalOrAttackMove(board : Board, new_move : Coord, possible_moves : Array):
 	if not new_move.is_on_board():
@@ -157,9 +157,10 @@ func determinePossibleKingMoves(piece : Piece, location : Coord, board : Board, 
 	if piece.get_color() == board.get_player_turn():
 		attacked_locations = determineAllAttackedSquares(board, Globals.get_opposite_color(color))
 
+	# TODO: Bug, if the direction you move WILL BE in check, then it's not a valid move (currently it's considered valid)
 	for d in Direction:
 		var d_as_int = Direction[d]
-		addNormalOrAttackMoveIfNotAttacked(board, location.get_in_direction(d_as_int), possible_moves, attacked_locations)
+		addNormalOrAttackMoveIfNotAttacked(board, location, location.get_in_direction(d_as_int), possible_moves, attacked_locations)
 
 	# If we can castle, show that as an option
 	var rank = 1
@@ -181,8 +182,6 @@ func determinePossibleKingMoves(piece : Piece, location : Coord, board : Board, 
 			var checkCoords = [rookCoord, knightCoord, bishopCoord, kingCoord]
 			if not anyAttacked(attacked_locations, checkCoords):
 				addCastlingMove(board, color, Globals.CastlingSide.KING, possible_moves)
-			else:
-				print("Cannot castle king-side, something is under attack")
 	
 	if castling_permission[color][Globals.CastlingSide.QUEEN]:
 		var bishopExists = (board.get_coord(bishopCoord) != null)
@@ -192,8 +191,6 @@ func determinePossibleKingMoves(piece : Piece, location : Coord, board : Board, 
 			var checkCoords = [rookCoord, knightCoord, bishopCoord, kingCoord, queenCoord]
 			if not anyAttacked(attacked_locations, checkCoords):
 				addCastlingMove(board, color, Globals.CastlingSide.QUEEN, possible_moves)
-			else:
-				print("Cannot castle queen-side, something is under attack")
 
 func determinePossibleQueenMoves(piece : Piece, location : Coord, board : Board, include_all_attacks : bool, possible_moves : Array):
 	for d in Direction:

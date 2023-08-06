@@ -1,7 +1,7 @@
 [gd_scene load_steps=12 format=3 uid="uid://cbmvjf3ejtrbg"]
 
 [ext_resource type="Script" path="res://systems/MainGame.gd" id="1_r2qtu"]
-[ext_resource type="Script" path="res://scenes/Tiles.gd" id="1_whl31"]
+[ext_resource type="Script" path="res://entities/Tiles.gd" id="2_3fqaa"]
 [ext_resource type="Script" path="res://systems/PieceManager.gd" id="3_bjd1x"]
 [ext_resource type="PackedScene" uid="uid://bknyt3jr1wtsx" path="res://entities/tile_marker.tscn" id="4_uer28"]
 [ext_resource type="PackedScene" uid="uid://dbijbncklxsnb" path="res://entities/turn_marker.tscn" id="4_xjrox"]
@@ -276,7 +276,7 @@ vertical_alignment = 1
 
 [node name="Tiles" type="Node2D" parent="Board"]
 position = Vector2(32, 32)
-script = ExtResource("1_whl31")
+script = ExtResource("2_3fqaa")
 
 [node name="Markers" type="Node2D" parent="Board/Tiles"]
 z_index = 1

@@ -7,8 +7,7 @@ extends Node2D
 var Piece = preload("res://entities/piece.tscn")
 var TileMarker = preload("res://entities/tile_marker.tscn")
 
-var board_enabled : bool = true
-var hide_overlay : bool = false
+var game_state : Globals.GameState = Globals.GameState.PLAYING
 var board : Board
 var markers : Array = []
 var half_moves : int = 0
@@ -53,9 +52,8 @@ func _process(delta):
 	if Input.is_action_just_pressed("click"):
 		
 		# To avoid spurious clicks being processed, make this a 3-state transition
-		if hide_overlay:
-			board_enabled = true
-			hide_overlay = false
+		if game_state == Globals.GameState.UICLOSING:
+			game_state = Globals.GameState.PLAYING
 			return
 		
 		var position = get_viewport().get_mouse_position()
@@ -68,10 +66,10 @@ func _process(delta):
 		if bounding_rectangle.has_point(position):
 			handle_click(bounding_rectangle, position)
 
-	if board_enabled:
+	if game_state == Globals.GameState.PLAYING:
 		var ran_out_of_time = update_clock(board.get_player_turn(), false)
 		if ran_out_of_time:
-			board_enabled = false
+			game_state == Globals.GameState.GAMEOVER
 			# If we run out of time, the other player wins
 			add_score_to_move_list(Globals.get_opposite_color(board.get_player_turn()))
 			$UI/Clock/WhiteTurnMarker.visible = false
@@ -92,7 +90,7 @@ func start_game():
 	$UI/Clock/WhiteTurnMarker.visible = true
 	$UI/Clock/BlackTurnMarker.visible = false
 	$Board/Control/GameOverContainer.visible = false
-	board_enabled = true
+	game_state = Globals.GameState.PLAYING
 
 #func get_turn():
 #	return player_turn
@@ -142,7 +140,7 @@ func update_clock(clock_color, turn_over):
 
 func flip_turn():
 	if board.is_checkmate(move_generator):
-		board_enabled = false
+		game_state = Globals.GameState.GAMEOVER
 		add_checkmate_to_move_list()
 		add_score_to_move_list(true)
 		$Board/Control/GameOver.visible = true
@@ -202,6 +200,11 @@ func update_markers(valid_moves):
 			markers[valid_move.get_row()][valid_move.get_col()].set_color(color)
 			markers[valid_move.get_row()][valid_move.get_col()].visible = true
 
+	if board.get_in_check()[board.get_player_turn()]:
+		var king_info = board.get_king_by_color(board.get_player_turn())
+		markers[king_info[0].get_row()][king_info[0].get_col()].set_color(Color.CRIMSON)
+		markers[king_info[0].get_row()][king_info[0].get_col()].visible = true
+
 # Note: Does not do en passant, move disambiguation, or promotion
 # Reference: https://en.wikipedia.org/wiki/Algebraic_notation_(chess)
 func add_move_to_move_list(piece : Piece, source : Coord, dest : Coord, capture : bool, placed_in_check : bool, castling_side : Globals.CastlingSide):
@@ -230,7 +233,7 @@ func add_move_to_move_list(piece : Piece, source : Coord, dest : Coord, capture 
 
 func handle_click(boundingRectangle, pos):
 
-	if not board_enabled:
+	if game_state != Globals.GameState.PLAYING:
 		return false
 
 	var markers_moves = null
@@ -264,8 +267,7 @@ func handle_click(boundingRectangle, pos):
 						if move_type == MoveGenerator.MoveType.ATTACK:
 							# Take the piece
 							board.take_piece(new_selected_coord)
-							board.set_coord(selected_tile, null)
-							board.set_coord(new_selected_coord, selected_piece)
+							animate_piece_move(selected_tile, new_selected_coord, selected_piece)
 							var placed_in_check = board.update_incheck(move_generator)
 							board.update_castling_permission(selected_piece)
 							add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, true, placed_in_check, Globals.CastlingSide.NONE)
@@ -278,8 +280,7 @@ func handle_click(boundingRectangle, pos):
 						elif move_type == MoveGenerator.MoveType.NORMAL_OR_ATTACK and Globals.get_opposite_color(
 								selected_piece.get_color()) == valid_move_destination_piece.get_color():
 							board.take_piece(new_selected_coord)
-							board.set_coord(selected_tile, null)
-							board.set_coord(new_selected_coord, selected_piece)
+							animate_piece_move(selected_tile, new_selected_coord, selected_piece)
 							var placed_in_check = board.update_incheck(move_generator)
 							board.update_castling_permission(selected_piece)
 							add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, true, placed_in_check, Globals.CastlingSide.NONE)
@@ -292,8 +293,7 @@ func handle_click(boundingRectangle, pos):
 						else:
 							assert("Found a non-attack move onto a valid piece")
 					elif move_type == MoveGenerator.MoveType.NORMAL or move_type == MoveGenerator.MoveType.NORMAL_OR_ATTACK:
-						board.set_coord(selected_tile, null)
-						board.set_coord(new_selected_coord, selected_piece)
+						animate_piece_move(selected_tile, new_selected_coord, selected_piece)
 						
 						if selected_piece.get_type() == Globals.PieceType.PAWN:
 							reset_half_moves()
@@ -307,23 +307,20 @@ func handle_click(boundingRectangle, pos):
 						flip_turn()
 						found_dest = true
 					elif move_type == MoveGenerator.MoveType.CASTLE:
-						board.set_coord(selected_tile, null)
-						board.set_coord(new_selected_coord, selected_piece)
+						animate_piece_move(selected_tile, new_selected_coord, selected_piece)
 						
 						var type = Globals.CastlingSide.NONE
 						if new_selected_coord.get_file() == 'B':
 							var rook_coord = Coord.new(selected_tile.get_rank(), 'A')
 							var rook_destination = Coord.new(selected_tile.get_rank(), 'C')
 							var rook_piece = board.get_coord(rook_coord)
-							board.set_coord(rook_coord, null)
-							board.set_coord(rook_destination, rook_piece)
+							animate_piece_move(rook_coord, rook_destination, rook_piece)
 							type = Globals.CastlingSide.QUEEN
 						else:
 							var rook_coord = Coord.new(selected_tile.get_rank(), 'H')
 							var rook_destination = Coord.new(selected_tile.get_rank(), 'F')
 							var rook_piece = board.get_coord(rook_coord)
-							board.set_coord(rook_coord, null)
-							board.set_coord(rook_destination, rook_piece)
+							animate_piece_move(rook_coord, rook_destination, rook_piece)
 							type = Globals.CastlingSide.KING
 						
 						board.update_castling_permission(selected_piece)
@@ -438,6 +435,27 @@ func reset_pieces():
 	place_piece_visuals()
 	start_game()
 
+func animate_piece_move(source_tile, destination_tile, piece):
+	game_state = Globals.GameState.ANIMATING
+	var i = 0.0
+	while i < 1.0:
+		var sourceX = (source_tile.get_col() * Constants.TILE_WIDTH) + Constants.PIECE_OFFSET
+		var sourceY = (source_tile.get_row() * Constants.TILE_HEIGHT) + Constants.PIECE_OFFSET
+		
+		var destX = (destination_tile.get_col() * Constants.TILE_WIDTH) + Constants.PIECE_OFFSET
+		var destY = (destination_tile.get_row() * Constants.TILE_HEIGHT) + Constants.PIECE_OFFSET
+
+		
+		piece.position = lerp(Vector2(sourceX, sourceY), Vector2(destX, destY), i)
+		print("X")
+		await get_tree().create_timer(0.001).timeout
+		i = i + 0.03
+	
+	board.set_coord(source_tile, null)
+	board.set_coord(destination_tile, piece)
+	game_state = Globals.GameState.PLAYING
+	
+
 func _on_new_game_button_pressed():
 	reset_pieces()
 	start_game()
@@ -445,21 +463,21 @@ func _on_new_game_button_pressed():
 func _on_export_to_fen_pressed_button():
 	$Board/Control/FENCopyContainer.visible = true
 	$Board/Control/FENCopyContainer/FENCopy.text = "Click to copy and close:\n\n" + board.export_to_fen()
-	board_enabled = false
+	game_state = Globals.GameState.UIFOCUS
 
 func _on_import_from_fen_pressed_button():
 	$Board/Control/FENEditContainer.visible = true
-	board_enabled = false
+	game_state = Globals.GameState.UIFOCUS
 
 func _on_do_import_pressed():
 	$Board/Control/FENEditContainer.visible = false
 	# TODO: Do Validation
 	initialize_from_fen($Board/Control/FENEditContainer/VBoxContainer/FENEdit.text)
-	hide_overlay = true
+	game_state = Globals.GameState.UICLOSING
 
 func _on_fen_copy_gui_input(event):
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		var line = $Board/Control/FENCopyContainer/FENCopy.text.split("\n")
 		DisplayServer.clipboard_set(line[2])
 		$Board/Control/FENCopyContainer.visible = false
-		hide_overlay = true
+		game_state = Globals.GameState.UICLOSING

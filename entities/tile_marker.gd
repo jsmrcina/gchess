@@ -6,7 +6,7 @@ func set_color(c):
 	color = c
 
 func _draw():
-	draw_rect(Rect2(0, 0, Constants.TILE_WIDTH, Constants.TILE_WIDTH), color, true, 0)
+	draw_rect(Rect2(10, 10, Constants.TILE_WIDTH - 20, Constants.TILE_WIDTH - 20), color, true, 0)
 
 # Called when the node enters the scene tree for the first time.
 func _ready():

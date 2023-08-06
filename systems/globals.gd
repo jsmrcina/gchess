@@ -21,6 +21,15 @@ enum Direction {
 	RANK_DOWN_FILE_UP = 7
 }
 
+enum GameState {
+	IDLE = 0,
+	PLAYING = 1,
+	UIFOCUS = 2,
+	UICLOSING = 3,
+	ANIMATING = 4,
+	GAMEOVER = 5
+}
+
 static var WHITE_COLOR = Color("#ffffff")
 static var BLACK_COLOR = Color("#000000")
 

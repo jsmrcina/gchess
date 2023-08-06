@@ -25,7 +25,6 @@ func copy(other : Board):
 			if piece != null:
 				var piece_copy = Piece.instantiate()
 				piece_copy.copy(piece)
-				print("copy: " + str(piece) + " " + str(piece.get_instance_id()))
 				set_coord(coord, piece_copy)
 				
 	# Copy other attributes
