@@ -65,6 +65,58 @@ func init_from_fen(pieces : String):
 		cur_pos = cur_pos.get_in_direction(Globals.Direction.RANK_DOWN)
 		cur_pos.set_file("A")
 
+func export_to_fen():
+	var fen_string = ""
+	var empty : int = 0
+	for r in range(get_height(), 0, -1):
+		for c in range(1, get_width() + 1):
+			var piece_coord = Coord.new(r, Coord.file_from_col(c - 1))
+			var piece_at_coord = get_coord(piece_coord)
+			if piece_at_coord != null:
+				if empty > 0:
+					fen_string += str(empty)
+					empty = 0
+				fen_string += piece_at_coord.to_fen_string()
+			else:
+				empty = empty + 1
+		if empty > 0:
+			fen_string += str(empty)
+			empty = 0
+		
+		if r != 1:
+			fen_string += "/"
+	
+	if get_player_turn() == Globals.PieceColor.BLACK:
+		fen_string += " b"
+	else:
+		fen_string += " w"
+		
+	fen_string += " "
+	var any_castling : bool = false
+	if castling_permission[Globals.PieceColor.WHITE][Globals.CastlingSide.KING]:
+		any_castling = true
+		fen_string += "K"
+	if castling_permission[Globals.PieceColor.WHITE][Globals.CastlingSide.QUEEN]:
+		any_castling = true
+		fen_string += "Q"
+	if castling_permission[Globals.PieceColor.BLACK][Globals.CastlingSide.KING]:
+		any_castling = true
+		fen_string += "k"
+	if castling_permission[Globals.PieceColor.BLACK][Globals.CastlingSide.QUEEN]:
+		any_castling = true
+		fen_string += "q"
+		
+	if !any_castling:
+		fen_string += "-"
+
+	# TODO: En Passant
+	fen_string += " -"
+
+	# TODO: Move half moves and full moves into here
+	fen_string += " 0 0"
+
+	return fen_string
+
 func reset_in_check():
 	in_check = [false, false]
 	
@@ -202,7 +254,7 @@ func is_checkmate(move_generator : MoveGenerator) -> bool:
 					var valid_move = piece_move[1] 
 					if (move_type == MoveGenerator.MoveType.NORMAL_OR_ATTACK or move_type == MoveGenerator.MoveType.ATTACK) and valid_move.equal(attacking_piece_coord):
 						# We can take the piece!
-						print("Piece can (at least) be taken by " + piece.to_readable_string())
+						print("Piece can (at least) be taken by " + piece.to_fen_string())
 						return false
 					else:
 						# FIXME: This is ungodly slow -- need to think about this more
@@ -212,7 +264,7 @@ func is_checkmate(move_generator : MoveGenerator) -> bool:
 							if (move_type == MoveGenerator.MoveType.NORMAL_OR_ATTACK or move_type == MoveGenerator.MoveType.NORMAL) and valid_move.equal(attacker_valid_move):
 								# Check to see if the king is safe after the move
 								if is_move_king_safe(move_generator, piece_coord, valid_move):
-									print("Piece can (at least) be intercepted by " + piece.to_readable_string() + " at " + str(piece_coord) + " to " + str(attacker_valid_move))
+									print("Piece can (at least) be intercepted by " + piece.to_fen_string() + " at " + str(piece_coord) + " to " + str(attacker_valid_move))
 									return false
 								
 			# If we get here, this is a single check with no way to intercept or to take the piece.
@@ -296,7 +348,7 @@ func dump():
 			var piece = get_coord(coord)
 			
 			if piece != null:
-				output += piece.to_readable_string()
+				output += piece.to_fen_string()
 			else:
 				output += "-"
 		output += "\n"

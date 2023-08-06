@@ -49,7 +49,7 @@ func get_starting_rank_position():
 func get_starting_file_position():
 	return starting_file_position
 
-func to_readable_string():
+func to_fen_string():
 	var toReturn = null
 	if self.get_type() == Globals.PieceType.PAWN:
 		toReturn = 'p'
@@ -72,7 +72,7 @@ func to_readable_string():
 	return toReturn.to_upper()
 
 func to_san_string():
-	var output = to_readable_string()
+	var output = to_fen_string()
 	if output == 'P' or output == 'p':
 		return ''
 	else:

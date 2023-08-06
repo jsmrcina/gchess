@@ -44,8 +44,8 @@ func _ready():
 	$UI/Clock/WhiteTurnMarker.set_color(Globals.WHITE_COLOR)
 	$UI/Clock/BlackTurnMarker.set_color(Globals.BLACK_COLOR)
 	
-	
-	initialize_from_fen("rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2")
+	initialize_from_fen("kq6/4PPP1/8/3R4/8/5Q2/8/7K b KQkq - 1 2")
+	# initialize_from_fen("rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2")
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -76,7 +76,7 @@ func _process(delta):
 			add_score_to_move_list(Globals.get_opposite_color(board.get_player_turn()))
 			$UI/Clock/WhiteTurnMarker.visible = false
 			$UI/Clock/BlackTurnMarker.visible = false
-			$Board/Control/GameOver.visible = true
+			$Board/Control/CenterContainer/GameOver.visible = true
 
 func start_game():
 	board.set_player_turn(Globals.PieceColor.WHITE)
@@ -91,7 +91,7 @@ func start_game():
 	reset_move_list()
 	$UI/Clock/WhiteTurnMarker.visible = true
 	$UI/Clock/BlackTurnMarker.visible = false
-	$Board/Control/GameOver.visible = false
+	$Board/Control/CenterContainer/GameOver.visible = false
 	board_enabled = true
 
 #func get_turn():
@@ -441,6 +441,7 @@ func _on_new_game_button_pressed():
 
 func _on_export_to_fen_pressed_button():
 	$Board/Control/CenterContainer.visible = true
+	$Board/Control/CenterContainer/FENCopy.text = "Click to copy and close:\n\n" + board.export_to_fen()
 	$Board/Control/CenterContainer/FENCopy.visible = true
 	board_enabled = false
 
