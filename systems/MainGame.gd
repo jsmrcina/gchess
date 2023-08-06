@@ -8,6 +8,7 @@ var Piece = preload("res://entities/piece.tscn")
 var TileMarker = preload("res://entities/tile_marker.tscn")
 
 var board_enabled : bool = true
+var hide_overlay : bool = false
 var board : Board
 var markers : Array = []
 var half_moves : int = 0
@@ -50,6 +51,12 @@ func _ready():
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
 	if Input.is_action_just_pressed("click"):
+		
+		# To avoid spurious clicks being processed, make this a 3-state transition
+		if hide_overlay:
+			board_enabled = true
+			hide_overlay = false
+			return
 		
 		var position = get_viewport().get_mouse_position()
 		
@@ -430,3 +437,17 @@ func reset_pieces():
 func _on_new_game_button_pressed():
 	reset_pieces()
 	start_game()
+
+
+func _on_export_to_fen_pressed_button():
+	$Board/Control/CenterContainer.visible = true
+	$Board/Control/CenterContainer/FENCopy.visible = true
+	board_enabled = false
+
+func _on_fen_copy_gui_input(event):
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		var line = $Board/Control/CenterContainer/FENCopy.text.split("\n")
+		DisplayServer.clipboard_set(line[2])
+		$Board/Control/CenterContainer.visible = false
+		$Board/Control/CenterContainer/FENCopy.visible = false
+		hide_overlay = true

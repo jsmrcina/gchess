@@ -239,10 +239,9 @@ func get_height():
 
 func set_coord(coord, piece):
 	board[coord.get_row()][coord.get_col()] = piece
-	# 64 is the width of the tiles, 6 is the offset to make the piece centered
 	
 	if piece != null:
-		piece.position = Vector2((coord.get_col() * Constants.TILE_WIDTH) + 6, (coord.get_row() * Constants.TILE_HEIGHT) + 6)
+		piece.position = Vector2((coord.get_col() * Constants.TILE_WIDTH) + Constants.PIECE_OFFSET, (coord.get_row() * Constants.TILE_HEIGHT) + Constants.PIECE_OFFSET)
 
 func take_piece(coord):
 	var piece = board[coord.get_row()][coord.get_col()]

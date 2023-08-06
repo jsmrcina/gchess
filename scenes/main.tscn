@@ -30,79 +30,79 @@ font_color = Color(0, 0, 0, 1)
 script = ExtResource("1_r2qtu")
 
 [node name="Board" type="Node2D" parent="."]
-position = Vector2(50, 50)
+position = Vector2(10, 10)
 
 [node name="Control" type="Control" parent="Board"]
 layout_mode = 3
 anchors_preset = 0
-offset_right = 548.0
-offset_bottom = 545.0
+offset_right = 1056.0
+offset_bottom = 1056.0
 
 [node name="Ranks" type="Panel" parent="Board/Control"]
 layout_mode = 0
 offset_top = 32.0
 offset_right = 32.0
-offset_bottom = 544.0
+offset_bottom = 1056.0
 
 [node name="1" type="Label" parent="Board/Control/Ranks"]
 layout_mode = 0
-offset_top = 448.0
+offset_top = 896.0
 offset_right = 32.0
-offset_bottom = 512.0
+offset_bottom = 1024.0
 text = "1"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="2" type="Label" parent="Board/Control/Ranks"]
 layout_mode = 0
-offset_top = 384.0
+offset_top = 768.0
 offset_right = 32.0
-offset_bottom = 448.0
+offset_bottom = 896.0
 text = "2"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="3" type="Label" parent="Board/Control/Ranks"]
 layout_mode = 0
-offset_top = 320.0
+offset_top = 640.0
 offset_right = 32.0
-offset_bottom = 384.0
+offset_bottom = 768.0
 text = "3"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="4" type="Label" parent="Board/Control/Ranks"]
 layout_mode = 0
-offset_top = 256.0
+offset_top = 512.0
 offset_right = 32.0
-offset_bottom = 320.0
+offset_bottom = 640.0
 text = "4"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="5" type="Label" parent="Board/Control/Ranks"]
 layout_mode = 0
-offset_top = 192.0
+offset_top = 384.0
 offset_right = 32.0
-offset_bottom = 256.0
+offset_bottom = 512.0
 text = "5"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="6" type="Label" parent="Board/Control/Ranks"]
 layout_mode = 0
-offset_top = 128.0
+offset_top = 256.0
 offset_right = 32.0
-offset_bottom = 192.0
+offset_bottom = 384.0
 text = "6"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="7" type="Label" parent="Board/Control/Ranks"]
 layout_mode = 0
-offset_top = 64.0
+offset_top = 128.0
 offset_right = 32.0
-offset_bottom = 128.0
+offset_bottom = 256.0
 text = "7"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -110,7 +110,7 @@ vertical_alignment = 1
 [node name="8" type="Label" parent="Board/Control/Ranks"]
 layout_mode = 0
 offset_right = 32.0
-offset_bottom = 64.0
+offset_bottom = 128.0
 text = "8"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -118,12 +118,12 @@ vertical_alignment = 1
 [node name="Files" type="Panel" parent="Board/Control"]
 layout_mode = 0
 offset_left = 32.0
-offset_right = 544.0
+offset_right = 1056.0
 offset_bottom = 32.0
 
 [node name="A" type="Label" parent="Board/Control/Files"]
 layout_mode = 0
-offset_right = 64.0
+offset_right = 128.0
 offset_bottom = 32.0
 text = "A
 "
@@ -132,8 +132,8 @@ vertical_alignment = 1
 
 [node name="B" type="Label" parent="Board/Control/Files"]
 layout_mode = 0
-offset_left = 64.0
-offset_right = 128.0
+offset_left = 128.0
+offset_right = 256.0
 offset_bottom = 32.0
 text = "B"
 horizontal_alignment = 1
@@ -141,8 +141,8 @@ vertical_alignment = 1
 
 [node name="C" type="Label" parent="Board/Control/Files"]
 layout_mode = 0
-offset_left = 128.0
-offset_right = 192.0
+offset_left = 256.0
+offset_right = 384.0
 offset_bottom = 32.0
 text = "C
 "
@@ -151,8 +151,8 @@ vertical_alignment = 1
 
 [node name="D" type="Label" parent="Board/Control/Files"]
 layout_mode = 0
-offset_left = 192.0
-offset_right = 256.0
+offset_left = 384.0
+offset_right = 512.0
 offset_bottom = 32.0
 text = "D
 "
@@ -161,8 +161,8 @@ vertical_alignment = 1
 
 [node name="E" type="Label" parent="Board/Control/Files"]
 layout_mode = 0
-offset_left = 256.0
-offset_right = 320.0
+offset_left = 512.0
+offset_right = 640.0
 offset_bottom = 32.0
 text = "E"
 horizontal_alignment = 1
@@ -170,8 +170,8 @@ vertical_alignment = 1
 
 [node name="F" type="Label" parent="Board/Control/Files"]
 layout_mode = 0
-offset_left = 320.0
-offset_right = 384.0
+offset_left = 640.0
+offset_right = 768.0
 offset_bottom = 32.0
 text = "F"
 horizontal_alignment = 1
@@ -179,8 +179,8 @@ vertical_alignment = 1
 
 [node name="G" type="Label" parent="Board/Control/Files"]
 layout_mode = 0
-offset_left = 384.0
-offset_right = 448.0
+offset_left = 768.0
+offset_right = 896.0
 offset_bottom = 32.0
 text = "G"
 horizontal_alignment = 1
@@ -188,23 +188,58 @@ vertical_alignment = 1
 
 [node name="H" type="Label" parent="Board/Control/Files"]
 layout_mode = 0
-offset_left = 448.0
-offset_right = 512.0
+offset_left = 896.0
+offset_right = 1024.0
 offset_bottom = 32.0
 text = "H"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="GameOver" type="Label" parent="Board/Control"]
+[node name="CenterContainer" type="CenterContainer" parent="Board/Control"]
 visible = false
 z_index = 2
 layout_mode = 0
-offset_left = 188.0
-offset_top = 231.0
-offset_right = 370.0
-offset_bottom = 281.0
+offset_right = 1056.0
+offset_bottom = 200.0
+mouse_filter = 0
+
+[node name="ColorRect" type="ColorRect" parent="Board/Control/CenterContainer"]
+custom_minimum_size = Vector2(1056, 200)
+layout_mode = 2
+color = Color(0.13, 0.13, 0.13, 1)
+
+[node name="GameOver" type="Label" parent="Board/Control/CenterContainer"]
+visible = false
+z_index = 2
+layout_mode = 2
 text = "Game Over!"
 label_settings = SubResource("LabelSettings_7gmj6")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="FENEdit" type="TextEdit" parent="Board/Control/CenterContainer"]
+visible = false
+custom_minimum_size = Vector2(800, 100)
+layout_mode = 2
+auto_translate = false
+localize_numeral_system = false
+tooltip_text = "Click Here To Copy FEN To Clipboard"
+text = "ASDASDASDSD"
+editable = false
+virtual_keyboard_enabled = false
+middle_mouse_paste_enabled = false
+caret_move_on_right_click = false
+caret_mid_grapheme = false
+caret_multiple = false
+
+[node name="FENCopy" type="Label" parent="Board/Control/CenterContainer"]
+visible = false
+custom_minimum_size = Vector2(800, 100)
+layout_mode = 2
+mouse_filter = 0
+text = "Click to copy and close:
+
+kq6/8/8/3R4/8/5Q2/8/7K"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -222,15 +257,15 @@ position = Vector2(50, 50)
 [node name="UI" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 0
-offset_left = 600.0
-offset_top = 50.0
-offset_right = 1000.0
-offset_bottom = 594.0
+offset_left = 1100.0
+offset_top = 10.0
+offset_right = 1500.0
+offset_bottom = 1034.0
 
 [node name="MoveList" type="ItemList" parent="UI"]
 layout_mode = 0
 offset_right = 200.0
-offset_bottom = 544.0
+offset_bottom = 1024.0
 focus_mode = 0
 allow_search = false
 
@@ -240,6 +275,14 @@ offset_left = 250.0
 offset_right = 400.0
 offset_bottom = 32.0
 text = "New Game"
+
+[node name="ExportToFEN" type="Button" parent="UI"]
+layout_mode = 0
+offset_left = 250.0
+offset_top = 40.0
+offset_right = 400.0
+offset_bottom = 72.0
+text = "Export To FEN"
 
 [node name="Clock" type="Control" parent="UI"]
 layout_mode = 3
@@ -307,4 +350,6 @@ script = ExtResource("3_bjd1x")
 [node name="MoveGenerator" type="Node" parent="."]
 script = ExtResource("5_68qmr")
 
+[connection signal="gui_input" from="Board/Control/CenterContainer/FENCopy" to="." method="_on_fen_copy_gui_input"]
 [connection signal="pressed" from="UI/NewGame" to="." method="_on_new_game_button_pressed"]
+[connection signal="pressed" from="UI/ExportToFEN" to="." method="_on_export_to_fen_pressed_button"]
