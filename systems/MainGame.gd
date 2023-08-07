@@ -20,7 +20,9 @@ var clock_times : Array[int] = [60 * 10, 60 * 10]
 var selected_tile : Coord
 var selected_piece : Piece
 
-var promotion_tile : Coord
+var promotion_source : Coord
+var promotion_dest : Coord
+var promotion_capture : bool
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -116,19 +118,26 @@ func add_score_to_move_list(white_wins):
 		var idx = $UI/MoveList.add_item("0-1")
 		$UI/MoveList.set_item_disabled(idx, true)
 
-func check_for_piece_promotion(dest_coord : Coord, piece : Piece):
+func check_for_piece_promotion(source_coord : Coord, dest_coord : Coord, piece : Piece, capture : bool):
 	if piece.get_type() == Globals.PieceType.PAWN:
 		if dest_coord.get_rank() == 1: # Black
 			game_state = Globals.GameState.PROMOTION
-			promotion_tile = dest_coord
+			promotion_source = source_coord
+			promotion_dest = dest_coord
+			promotion_capture = capture
 			$Board/Control/PromotionContainer.visible = true
 			$Board/Control/PromotionContainer/BlackPieces.visible = true
+			return true
 		elif dest_coord.get_rank() == 8: # White
 			game_state = Globals.GameState.PROMOTION
-			promotion_tile = dest_coord
+			promotion_source = source_coord
+			promotion_dest = dest_coord
+			promotion_capture = capture
 			$Board/Control/PromotionContainer.visible = true
 			$Board/Control/PromotionContainer/WhitePieces.visible = true
+			return true
 			
+	return false
 
 func reset_clock():
 	start_turn_time = -1
@@ -160,25 +169,39 @@ func update_clock(clock_color, turn_over):
 
 	return ran_out_of_time
 
-func flip_turn():
-	if board.is_checkmate(move_generator):
-		game_state = Globals.GameState.GAMEOVER
-		add_checkmate_to_move_list()
-		add_score_to_move_list(true)
-		$Board/Control/GameOver.visible = true
-	else:
-		if board.get_player_turn() == Globals.PieceColor.WHITE:
-			board.set_player_turn(Globals.PieceColor.BLACK)
-			$UI/Clock/WhiteTurnMarker.visible = false
-			$UI/Clock/BlackTurnMarker.visible = true
+func flip_turn(source_coord : Coord, dest_coord : Coord, piece : Piece, capture : bool, placed_in_check : bool, castling_side : Globals.CastlingSide, promotion_type : String):
+	var is_piece_being_promoted = false
+	if promotion_type == "":
+		# If the promotion type is set, a piece was already promoted
+		is_piece_being_promoted = check_for_piece_promotion(source_coord, dest_coord, piece, true)
+	
+	if not is_piece_being_promoted:
+		if board.is_checkmate(move_generator):
+			game_state = Globals.GameState.GAMEOVER
+			add_checkmate_to_move_list()
+			add_score_to_move_list(true)
+			$Board/Control/GameOver.visible = true
 		else:
-			full_moves = full_moves + 1
-			board.set_player_turn(Globals.PieceColor.WHITE)
-			$UI/Clock/WhiteTurnMarker.visible = true
-			$UI/Clock/BlackTurnMarker.visible = false
+			add_move_to_move_list(piece, source_coord, dest_coord, capture, placed_in_check, castling_side, promotion_type)
+			selected_tile = null
+			selected_piece = null
+			update_clock(board.get_player_turn(), true)
+			
+			if board.get_player_turn() == Globals.PieceColor.WHITE:
+				board.set_player_turn(Globals.PieceColor.BLACK)
+				$UI/Clock/WhiteTurnMarker.visible = false
+				$UI/Clock/BlackTurnMarker.visible = true
+			else:
+				full_moves = full_moves + 1
+				board.set_player_turn(Globals.PieceColor.WHITE)
+				$UI/Clock/WhiteTurnMarker.visible = true
+				$UI/Clock/BlackTurnMarker.visible = false
 
-		half_moves = half_moves + 1
-		start_turn_time = Time.get_ticks_usec()
+			half_moves = half_moves + 1
+			start_turn_time = Time.get_ticks_usec()
+	else:
+		# It is still this player's turn until they finish promotion
+		pass
 
 func reset_half_moves():
 	half_moves = 0
@@ -196,6 +219,7 @@ func reset_move_list():
 	move_list_moves = 0
 
 func update_markers(valid_moves):
+	reset_markers()
 	if selected_tile != null:
 		markers[selected_tile.get_row()][selected_tile.get_col()].set_color(Color.BLUE)
 		markers[selected_tile.get_row()][selected_tile.get_col()].visible = true
@@ -220,6 +244,7 @@ func update_markers(valid_moves):
 			markers[valid_move.get_row()][valid_move.get_col()].set_color(color)
 			markers[valid_move.get_row()][valid_move.get_col()].visible = true
 
+func update_check_marker():
 	if board.get_in_check()[board.get_player_turn()]:
 		var king_info = board.get_king_by_color(board.get_player_turn())
 		markers[king_info[0].get_row()][king_info[0].get_col()].set_color(Color.CRIMSON)
@@ -227,7 +252,7 @@ func update_markers(valid_moves):
 
 # Note: Does not do en passant, move disambiguation, or promotion
 # Reference: https://en.wikipedia.org/wiki/Algebraic_notation_(chess)
-func add_move_to_move_list(piece : Piece, source : Coord, dest : Coord, capture : bool, placed_in_check : bool, castling_side : Globals.CastlingSide):
+func add_move_to_move_list(piece : Piece, source : Coord, dest : Coord, capture : bool, placed_in_check : bool, castling_side : Globals.CastlingSide, promotion_piece : String):
 	
 	var final_string = str(move_list_moves) + ": "
 	move_list_moves = move_list_moves + 1
@@ -247,6 +272,10 @@ func add_move_to_move_list(piece : Piece, source : Coord, dest : Coord, capture 
 		
 	if placed_in_check:
 		final_string += "+"
+
+	if promotion_piece != "":
+		final_string += "="
+		final_string += promotion_piece
 
 	var idx = $UI/MoveList.add_item(final_string)
 	$UI/MoveList.set_item_disabled(idx, true)
@@ -268,7 +297,6 @@ func handle_click(boundingRectangle, pos):
 	var new_selected_piece = board.get_coord(new_selected_coord)
 
 	if new_selected_coord.equal(selected_tile):
-		reset_markers()
 		selected_tile = null
 		selected_piece = null
 	elif selected_tile != null:
@@ -291,13 +319,8 @@ func handle_click(boundingRectangle, pos):
 							await animate_piece_move(selected_tile, new_selected_coord, selected_piece)
 							var placed_in_check = board.update_incheck(move_generator)
 							board.update_castling_permission(selected_piece)
-							add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, true, placed_in_check, Globals.CastlingSide.NONE)
-							check_for_piece_promotion(new_selected_coord, selected_piece)
-							selected_tile = null
-							selected_piece = null
 							reset_half_moves()
-							update_clock(board.get_player_turn(), true)
-							flip_turn()
+							flip_turn(selected_tile, new_selected_coord, selected_piece, true, placed_in_check, Globals.CastlingSide.NONE, "")
 							found_dest = true
 						elif move_type == MoveGenerator.MoveType.NORMAL_OR_ATTACK and Globals.get_opposite_color(
 								selected_piece.get_color()) == valid_move_destination_piece.get_color():
@@ -305,13 +328,8 @@ func handle_click(boundingRectangle, pos):
 							await animate_piece_move(selected_tile, new_selected_coord, selected_piece)
 							var placed_in_check = board.update_incheck(move_generator)
 							board.update_castling_permission(selected_piece)
-							add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, true, placed_in_check, Globals.CastlingSide.NONE)
-							check_for_piece_promotion(new_selected_coord, selected_piece)
-							selected_tile = null
-							selected_piece = null
 							reset_half_moves()
-							update_clock(board.get_player_turn(), true)
-							flip_turn()
+							flip_turn(selected_tile, new_selected_coord, selected_piece, true, placed_in_check, Globals.CastlingSide.NONE, "")
 							found_dest = true
 						else:
 							assert("Found a non-attack move onto a valid piece")
@@ -323,12 +341,7 @@ func handle_click(boundingRectangle, pos):
 
 						var placed_in_check = board.update_incheck(move_generator)
 						board.update_castling_permission(selected_piece)
-						add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, false, placed_in_check, Globals.CastlingSide.NONE)
-						check_for_piece_promotion(new_selected_coord, selected_piece)
-						selected_tile = null
-						selected_piece = null
-						update_clock(board.get_player_turn(), true)
-						flip_turn()
+						flip_turn(selected_tile, new_selected_coord, selected_piece, false, placed_in_check, Globals.CastlingSide.NONE, "")
 						found_dest = true
 					elif move_type == MoveGenerator.MoveType.CASTLE:
 						await animate_piece_move(selected_tile, new_selected_coord, selected_piece)
@@ -348,11 +361,7 @@ func handle_click(boundingRectangle, pos):
 							type = Globals.CastlingSide.KING
 						
 						board.update_castling_permission(selected_piece)
-						add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, false, false, type)
-						selected_tile = null
-						selected_piece = null
-						update_clock(board.get_player_turn(), true)
-						flip_turn()
+						flip_turn(selected_tile, new_selected_coord, selected_piece, false, false, type, "")
 						found_dest = true
 
 				if found_dest:
@@ -370,6 +379,7 @@ func handle_click(boundingRectangle, pos):
 			markers_moves = move_generator.get_valid_moves_for_current_player(selected_piece, selected_tile, board, false)
 	
 	update_markers(markers_moves)
+	update_check_marker()
 
 func create_piece_from_info(position, info):
 	var piece = Piece.instantiate()
@@ -507,12 +517,23 @@ func _on_fen_copy_gui_input(event):
 
 
 func _on_promotion_button_pressed(type : String):
-	var piece = board.get_coord(promotion_tile)
-	board.set_coord(promotion_tile, null)
+	var piece = board.get_coord(promotion_dest)
+	board.set_coord(promotion_dest, null)
 	piece.queue_free()
-	create_piece_from_info(promotion_tile, Globals.piece_info_from_fen_string(type))
-	$Board/Tiles.add_child(board.get_coord(promotion_tile))
-	promotion_tile = null
+	create_piece_from_info(promotion_dest, Globals.piece_info_from_fen_string(type))
+	$Board/Tiles.add_child(board.get_coord(promotion_dest))
+	
+	# Promotion may have caused a king to become in-check
+	var placed_in_check = board.update_incheck(move_generator)
+	flip_turn(promotion_source, promotion_dest, piece, promotion_capture, placed_in_check, Globals.CastlingSide.NONE, type)
+	reset_markers()
+	update_check_marker()
+	
+	# Reset state that was carried into here
+	promotion_source = null
+	promotion_dest = null
+	promotion_capture = false
+	
 	game_state = Globals.GameState.PLAYING
 	
 	$Board/Control/PromotionContainer.visible = false
