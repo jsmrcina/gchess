@@ -13,7 +13,6 @@ func _ready():
 		tiles.append([])
 		for c in range(0, Constants.BOARD_WIDTH_IN_TILES):
 			var tile = tile_preload.instantiate()
-			print("tile: " + str(tile.get_instance_id()))
 			tile.position.x = c * Constants.TILE_WIDTH
 			tile.position.y = r * Constants.TILE_HEIGHT
 			

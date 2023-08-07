@@ -27,8 +27,10 @@ enum GameState {
 	UIFOCUS = 2,
 	UICLOSING = 3,
 	ANIMATING = 4,
-	GAMEOVER = 5,
-	PROMOTION = 6
+	CHECKMATE = 5,
+	DRAW = 6,
+	TIMER_RAN_OUT = 7,
+	PROMOTION = 8
 }
 
 static var WHITE_COLOR = Color("#ffffff")

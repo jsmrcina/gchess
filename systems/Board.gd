@@ -150,24 +150,9 @@ func get_castling_permission():
 	return castling_permission
 
 func update_incheck(move_generator : MoveGenerator) -> bool:
-	in_check[Globals.PieceColor.WHITE] = false
-	in_check[Globals.PieceColor.BLACK] = false
-
-	var attacked_locations = move_generator.determineAllAttackedSquares(self, player_turn)
-	for attack in attacked_locations:
-		var source_coord = attack[0]
-		var piece_at_source = attack[1]
-		var move_type = attack[2]
-		var destination_coord = attack[3]
-		var piece_at_attacked_location = get_coord(destination_coord)
-		if piece_at_attacked_location != null:
-			if piece_at_attacked_location.get_type() == Globals.PieceType.KING and piece_at_attacked_location.get_color() == Globals.get_opposite_color(
-					player_turn):
-				in_check[Globals.get_opposite_color(player_turn)] = true
-				print("In Check! " + str(Globals.get_opposite_color(player_turn)))
-				return true
-
-	return false
+	var color = Globals.get_opposite_color(get_player_turn())
+	in_check[color] = move_generator.determine_in_check(self, color)
+	return in_check[color]
 
 func update_castling_permission(moved_piece : Piece):
 	# If you move your king, both types are not permitted
@@ -182,7 +167,7 @@ func update_castling_permission(moved_piece : Piece):
 		else:
 			castling_permission[player_turn][Globals.CastlingSide.KING] = false
 
-func is_move_king_safe(move_generator : MoveGenerator, source_tile : Coord, dest_tile : Coord) -> bool:
+func is_move_king_safe(move_generator : MoveGenerator, source_tile : Coord, dest_tile : Coord, color : Globals.PieceColor) -> bool:
 	var king_safe = true
 	var after_move_board = Board.new()
 	after_move_board.copy(self)
@@ -196,9 +181,10 @@ func is_move_king_safe(move_generator : MoveGenerator, source_tile : Coord, dest
 	after_move_board.set_coord(source_tile, null)
 	after_move_board.set_coord(dest_tile, moving_piece)
 
-	var current_king = after_move_board.get_king_by_color(after_move_board.get_player_turn())
+	var current_king = after_move_board.get_king_by_color(color)
 
-	var attacked_locations = move_generator.determineAllAttackedSquares(after_move_board, Globals.get_opposite_color(after_move_board.get_player_turn()))
+	var attacked_locations = move_generator.determine_all_attacked_squares(after_move_board, Globals.get_opposite_color(color))
+	print("king safe attacked locations: " + str(attacked_locations))
 	for attack in attacked_locations:
 		var source_coord = attack[0]
 
@@ -210,38 +196,55 @@ func is_move_king_safe(move_generator : MoveGenerator, source_tile : Coord, dest
 	after_move_board.delete()
 	return king_safe
 
+func is_stalemate(move_generator : MoveGenerator) -> bool:
+	var king = get_king_by_color(Globals.get_opposite_color(player_turn))
+	var valid_king_moves = move_generator.get_valid_moves_for_opposite_player(king[1], king[0], self, false)
+	if valid_king_moves.size() == 0:
+		var remaining_pieces = get_pieces_by_color(Globals.get_opposite_color(player_turn))
+		if remaining_pieces.size() == 1:
+			# Only king is left and cannot move
+			return true
+			
+	return false
+
 func is_checkmate(move_generator : MoveGenerator) -> bool:
 	if !(in_check[0] || in_check[1]):
 		return false
 
+	var attackers_participating_in_check : Array = []
 	var attacks_participating_in_check : Array = []
 	var checked_king = get_king_by_color(Globals.get_opposite_color(player_turn))
 	
+	# Remove the king from the board so that we can see any attacking lines that pass through it
+	set_coord(checked_king[0], null)
+
 	# Find all attacks participating in this check
-	var attacked_locations = move_generator.determineAllAttackedSquares(self, player_turn)
+	var attacked_locations = move_generator.determine_all_attacked_squares(self, player_turn)
 	for attack in attacked_locations:
 		var source_coord = attack[0]
 		var piece_at_source = attack[1]
 		var move_type = attack[2]
 		var destination_coord = attack[3]
 		if destination_coord.equal(checked_king[0]):
+			attackers_participating_in_check.append([source_coord, piece_at_source])
 			attacks_participating_in_check.append(attack)
-	
-	for attack in attacks_participating_in_check:
-		var source_coord = attack[0]
-		var piece_at_source = attack[1]
-		var move_type = attack[2]
-		var destination_coord = attack[3]
+
+	# Replace the king
+	set_coord(checked_king[0], checked_king[1])
 	
 	# Single check
 	if attacks_participating_in_check.size() == 1:
 		# Can the king move?
 		var valid_king_moves = move_generator.get_valid_moves_for_opposite_player(checked_king[1], checked_king[0], self, false)
+		#print("valid king moves: " + str(valid_king_moves))
 		if valid_king_moves.size() == 0:
 			var attacking_piece_coord = attacks_participating_in_check[0][0]
 			var attacking_piece = attacks_participating_in_check[0][1]
 			var valid_attacker_moves = move_generator.get_valid_moves_for_current_player(attacking_piece, attacking_piece_coord, self, false)
-			
+
+			var tiles_between_attacker_and_king = move_generator.determine_line_between_coordinates(attackers_participating_in_check[0][0], checked_king[0])
+			#print("Tiles between king and attacker: " + str(tiles_between_attacker_and_king))
+
 			# Can someone intercept or take the piece
 			for piece_tuple in get_pieces_by_color(Globals.get_opposite_color(player_turn)):
 				var piece_coord = piece_tuple[0]
@@ -255,30 +258,32 @@ func is_checkmate(move_generator : MoveGenerator) -> bool:
 						print("Piece can (at least) be taken by " + piece.to_fen_string())
 						return false
 					else:
-						# FIXME: This is ungodly slow -- need to think about this more
-						for attacker_move in valid_attacker_moves:
-							var attacker_move_type = attacker_move[0]
-							var attacker_valid_move = attacker_move[1]
-							if (move_type == MoveGenerator.MoveType.NORMAL_OR_ATTACK or move_type == MoveGenerator.MoveType.NORMAL) and valid_move.equal(attacker_valid_move):
+						# Find the attacks that form a line between the king and the attacker (for interceptions)
+						for tile in tiles_between_attacker_and_king:
+							if (move_type == MoveGenerator.MoveType.NORMAL_OR_ATTACK or move_type == MoveGenerator.MoveType.NORMAL) and valid_move.equal(tile):
 								# Check to see if the king is safe after the move
-								if is_move_king_safe(move_generator, piece_coord, valid_move):
-									print("Piece can (at least) be intercepted by " + piece.to_fen_string() + " at " + str(piece_coord) + " to " + str(attacker_valid_move))
+								if is_move_king_safe(move_generator, piece_coord, valid_move, get_player_turn()):
+									print("Piece can (at least) be intercepted by " + piece.to_fen_string() + " at " + str(piece_coord) + " to " + str(tile))
 									return false
-								
+
 			# If we get here, this is a single check with no way to intercept or to take the piece.
 			return true
 		else:
 			for move in valid_king_moves:
 				var move_type = move[0]
-				var valid_move = move[1] 
-				print(str(move_type) + " " + str(valid_move))
-			print("King can move")
+				var valid_move = move[1]
+				var king_safe = is_move_king_safe(move_generator, checked_king[0], valid_move, Globals.get_opposite_color(get_player_turn()))
+				if king_safe:
+					#print(str(move_type) + " " + str(valid_move))
+					print("King can move")
+				else:
+					return true
 	# Double check (only resolved by moving)
 	else:
 		var valid_king_moves = move_generator.get_valid_moves_for_opposite_player(checked_king[1], checked_king[0], self, false)
 		if valid_king_moves.size() == 0:
 			return true
-			
+
 	return false
 
 func get_width():

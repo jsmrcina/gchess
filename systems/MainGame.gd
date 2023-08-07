@@ -2,7 +2,8 @@ extends Node2D
 
 # Missing rules
 # En Passant
-# Promotion
+# Three-fold repetition
+# Fifty move rule
 
 var Piece = preload("res://entities/piece.tscn")
 var TileMarker = preload("res://entities/tile_marker.tscn")
@@ -46,7 +47,7 @@ func _ready():
 	$UI/Clock/WhiteTurnMarker.set_color(Globals.WHITE_COLOR)
 	$UI/Clock/BlackTurnMarker.set_color(Globals.BLACK_COLOR)
 	
-	initialize_from_fen("kq6/4PPP1/8/3R4/8/5Q2/8/7K b KQkq - 1 2")
+	initialize_from_fen("7K/8/8/8/3B4/8/3Q4/1k6 w KQkq - 1 2")
 	# initialize_from_fen("rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2")
 
 	# Set up the promotion buttons
@@ -82,9 +83,9 @@ func _process(delta):
 	if game_state == Globals.GameState.PLAYING:
 		var ran_out_of_time = update_clock(board.get_player_turn(), false)
 		if ran_out_of_time:
-			game_state == Globals.GameState.GAMEOVER
+			game_state == Globals.GameState.TIMER_RAN_OUT
 			# If we run out of time, the other player wins
-			add_score_to_move_list(Globals.get_opposite_color(board.get_player_turn()))
+			add_score_to_move_list_and_set_game_over_label()
 			$UI/Clock/WhiteTurnMarker.visible = false
 			$UI/Clock/BlackTurnMarker.visible = false
 			$Board/Control/GameOverContainer.visible = true
@@ -109,14 +110,30 @@ func add_checkmate_to_move_list():
 	var idx = $UI/MoveList.add_item("#")
 	$UI/MoveList.set_item_disabled(idx, true)
 
-func add_score_to_move_list(white_wins):
-	if white_wins:
-		var idx = $UI/MoveList.add_item("1-0")
+func add_score_to_move_list_and_set_game_over_label():
+	if game_state == Globals.GameState.CHECKMATE:
+		if board.get_player_turn() == Globals.PieceColor.WHITE:
+			var idx = $UI/MoveList.add_item("1-0")
+			$UI/MoveList.set_item_disabled(idx, true)
+			$Board/Control/GameOverContainer/GameOver.text = "White wins"
+		else:
+			var idx = $UI/MoveList.add_item("0-1")
+			$UI/MoveList.set_item_disabled(idx, true)
+			$Board/Control/GameOverContainer/GameOver.text = "Black wins"
+	elif game_state == Globals.GameState.DRAW:
+		var idx = $UI/MoveList.add_item("1/2-1/2")
 		$UI/MoveList.set_item_disabled(idx, true)
-		
-	else:
-		var idx = $UI/MoveList.add_item("0-1")
-		$UI/MoveList.set_item_disabled(idx, true)
+		$Board/Control/GameOverContainer/GameOver.text = "Draw"
+	elif game_state == Globals.GameState.TIMER_RAN_OUT:
+		# In this case, opposite player whose turn it is wins
+		if board.get_player_turn() == Globals.PieceColor.WHITE:
+			var idx = $UI/MoveList.add_item("0-1")
+			$UI/MoveList.set_item_disabled(idx, true)
+			$Board/Control/GameOverContainer/GameOver.text = "Black wins due to time"
+		else:
+			var idx = $UI/MoveList.add_item("1-0")
+			$UI/MoveList.set_item_disabled(idx, true)
+			$Board/Control/GameOverContainer/GameOver.text = "White wins due to time"
 
 func check_for_piece_promotion(source_coord : Coord, dest_coord : Coord, piece : Piece, capture : bool):
 	if piece.get_type() == Globals.PieceType.PAWN:
@@ -176,11 +193,22 @@ func flip_turn(source_coord : Coord, dest_coord : Coord, piece : Piece, capture 
 		is_piece_being_promoted = check_for_piece_promotion(source_coord, dest_coord, piece, capture)
 	
 	if not is_piece_being_promoted:
-		if board.is_checkmate(move_generator):
-			game_state = Globals.GameState.GAMEOVER
+		var is_checkmate = board.is_checkmate(move_generator)
+		var is_stalemate = board.is_stalemate(move_generator)
+		
+		if is_checkmate:
+			game_state = Globals.GameState.CHECKMATE
 			add_checkmate_to_move_list()
-			add_score_to_move_list(true)
-			$Board/Control/GameOver.visible = true
+			add_score_to_move_list_and_set_game_over_label()
+			selected_tile = null
+			selected_piece = null
+			$Board/Control/GameOverContainer.visible = true
+		elif is_stalemate:
+			game_state = Globals.GameState.DRAW
+			add_score_to_move_list_and_set_game_over_label()
+			selected_tile = null
+			selected_piece = null
+			$Board/Control/GameOverContainer.visible = true
 		else:
 			add_move_to_move_list(piece, source_coord, dest_coord, capture, placed_in_check, castling_side, promotion_type)
 			selected_tile = null
@@ -310,7 +338,7 @@ func handle_click(boundingRectangle, pos):
 			var valid_move = item[1] 
 
 			if valid_move.equal(new_selected_coord):
-				var king_safe = board.is_move_king_safe(move_generator, selected_tile, new_selected_coord)
+				var king_safe = board.is_move_king_safe(move_generator, selected_tile, new_selected_coord, board.get_player_turn())
 				if king_safe:
 					var valid_move_destination_piece = board.get_coord(new_selected_coord)
 					if valid_move_destination_piece != null:
@@ -395,14 +423,24 @@ func initialize_from_fen(fen):
 		# First, split into the fields
 		var fields = fen.split(" ")
 		
-		if fields.size() != 6:
+		if fields.size() != 6 and fields.size() != 1:
 			# TODO: Show error
 			return
 
 		# The first field describes the pieces
 		var pieces = fields[0]
+		board.delete()
+		board = Board.new()
 		board.init_from_fen(pieces)
 		place_piece_visuals()
+		
+		# Allow undecorated FEN strings, but defaults kinda suck
+		if fields.size() == 1:
+			fields.append("w")
+			fields.append("-")
+			fields.append("-")
+			fields.append("0")
+			fields.append("0")
 
 		# The second field tells you whose turn it is
 		if fields[1] == 'w':
@@ -488,7 +526,6 @@ func animate_piece_move(source_tile, destination_tile, piece):
 	board.set_coord(source_tile, null)
 	board.set_coord(destination_tile, piece)
 	game_state = Globals.GameState.PLAYING
-	
 
 func _on_new_game_button_pressed():
 	reset_pieces()
@@ -500,6 +537,7 @@ func _on_export_to_fen_pressed_button():
 	game_state = Globals.GameState.UIFOCUS
 
 func _on_import_from_fen_pressed_button():
+	$Board/Control/GameOverContainer.visible = false
 	$Board/Control/FENEditContainer.visible = true
 	game_state = Globals.GameState.UIFOCUS
 
@@ -507,7 +545,9 @@ func _on_do_import_pressed():
 	$Board/Control/FENEditContainer.visible = false
 	# TODO: Do Validation
 	initialize_from_fen($Board/Control/FENEditContainer/VBoxContainer/FENEdit.text)
-	game_state = Globals.GameState.UICLOSING
+	
+	# Button properly eats input
+	game_state = Globals.GameState.PLAYING
 
 func _on_fen_copy_gui_input(event):
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:

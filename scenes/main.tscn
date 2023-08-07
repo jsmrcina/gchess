@@ -1,7 +1,8 @@
-[gd_scene load_steps=20 format=3 uid="uid://cbmvjf3ejtrbg"]
+[gd_scene load_steps=21 format=3 uid="uid://cbmvjf3ejtrbg"]
 
 [ext_resource type="Script" path="res://systems/MainGame.gd" id="1_r2qtu"]
 [ext_resource type="Script" path="res://entities/Tiles.gd" id="2_3fqaa"]
+[ext_resource type="FontFile" uid="uid://btaqa05rwojdn" path="res://fonts/Next Sphere Black.ttf" id="2_ba7kq"]
 [ext_resource type="Texture2D" uid="uid://cy10ckpyaxj4r" path="res://sprites/nw.png" id="2_r4pak"]
 [ext_resource type="Script" path="res://systems/PieceManager.gd" id="3_bjd1x"]
 [ext_resource type="Texture2D" uid="uid://bb1h8u2tf0rr3" path="res://sprites/bw.png" id="3_s3uqt"]
@@ -16,12 +17,12 @@
 [ext_resource type="Texture2D" uid="uid://c425lqw7d5lp7" path="res://sprites/qb.png" id="9_eq8cp"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_7gmj6"]
-line_spacing = 5.0
+line_spacing = 0.0
+font = ExtResource("2_ba7kq")
 font_size = 32
-font_color = Color(1, 0, 0, 1)
-outline_size = 5
+font_color = Color(0.235294, 0.505882, 1, 1)
 outline_color = Color(1, 0.858824, 0.835294, 1)
-shadow_size = 10
+shadow_size = 0
 shadow_color = Color(0, 0, 0, 0.878431)
 
 [sub_resource type="LabelSettings" id="LabelSettings_juccd"]
@@ -266,18 +267,18 @@ visible = false
 z_index = 2
 layout_mode = 0
 offset_right = 1056.0
-offset_bottom = 200.0
+offset_bottom = 50.0
 mouse_filter = 0
 
 [node name="ColorRect" type="ColorRect" parent="Board/Control/GameOverContainer"]
-custom_minimum_size = Vector2(1056, 200)
+custom_minimum_size = Vector2(1056, 50)
 layout_mode = 2
 color = Color(0.13, 0.13, 0.13, 1)
 
 [node name="GameOver" type="Label" parent="Board/Control/GameOverContainer"]
 z_index = 2
 layout_mode = 2
-text = "Game Over!"
+text = "Game Over"
 label_settings = SubResource("LabelSettings_7gmj6")
 horizontal_alignment = 1
 vertical_alignment = 1
