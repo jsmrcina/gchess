@@ -20,9 +20,9 @@ var clock_times : Array[int] = [60 * 10, 60 * 10]
 var selected_tile : Coord
 var selected_piece : Piece
 
-var promotion_source : Coord
-var promotion_dest : Coord
-var promotion_capture : bool
+var promotion_source : Coord = null
+var promotion_dest : Coord = null
+var promotion_capture : bool = false
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -173,7 +173,7 @@ func flip_turn(source_coord : Coord, dest_coord : Coord, piece : Piece, capture 
 	var is_piece_being_promoted = false
 	if promotion_type == "":
 		# If the promotion type is set, a piece was already promoted
-		is_piece_being_promoted = check_for_piece_promotion(source_coord, dest_coord, piece, true)
+		is_piece_being_promoted = check_for_piece_promotion(source_coord, dest_coord, piece, capture)
 	
 	if not is_piece_being_promoted:
 		if board.is_checkmate(move_generator):
@@ -270,12 +270,13 @@ func add_move_to_move_list(piece : Piece, source : Coord, dest : Coord, capture 
 		else:
 			final_string += "0-0-0"
 		
+	if promotion_piece != "":
+		final_string += "("
+		final_string += promotion_piece
+		final_string += ")"
+
 	if placed_in_check:
 		final_string += "+"
-
-	if promotion_piece != "":
-		final_string += "="
-		final_string += promotion_piece
 
 	var idx = $UI/MoveList.add_item(final_string)
 	$UI/MoveList.set_item_disabled(idx, true)
