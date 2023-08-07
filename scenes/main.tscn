@@ -1,11 +1,19 @@
-[gd_scene load_steps=12 format=3 uid="uid://cbmvjf3ejtrbg"]
+[gd_scene load_steps=20 format=3 uid="uid://cbmvjf3ejtrbg"]
 
 [ext_resource type="Script" path="res://systems/MainGame.gd" id="1_r2qtu"]
 [ext_resource type="Script" path="res://entities/Tiles.gd" id="2_3fqaa"]
+[ext_resource type="Texture2D" uid="uid://cy10ckpyaxj4r" path="res://sprites/nw.png" id="2_r4pak"]
 [ext_resource type="Script" path="res://systems/PieceManager.gd" id="3_bjd1x"]
+[ext_resource type="Texture2D" uid="uid://bb1h8u2tf0rr3" path="res://sprites/bw.png" id="3_s3uqt"]
+[ext_resource type="Texture2D" uid="uid://12rpxwffl8jx" path="res://sprites/rw.png" id="4_aqseb"]
 [ext_resource type="PackedScene" uid="uid://bknyt3jr1wtsx" path="res://entities/tile_marker.tscn" id="4_uer28"]
 [ext_resource type="PackedScene" uid="uid://dbijbncklxsnb" path="res://entities/turn_marker.tscn" id="4_xjrox"]
 [ext_resource type="Script" path="res://systems/MoveGenerator.gd" id="5_68qmr"]
+[ext_resource type="Texture2D" uid="uid://blhsp0nd6aq8s" path="res://sprites/qw.png" id="5_m7vtb"]
+[ext_resource type="Texture2D" uid="uid://byebulb6mjh7k" path="res://sprites/nb.png" id="6_aqm0v"]
+[ext_resource type="Texture2D" uid="uid://b0ahe06rslalr" path="res://sprites/bb.png" id="7_a5gfm"]
+[ext_resource type="Texture2D" uid="uid://bhg34f1rqm2jn" path="res://sprites/rb.png" id="8_1tkxn"]
+[ext_resource type="Texture2D" uid="uid://c425lqw7d5lp7" path="res://sprites/qb.png" id="9_eq8cp"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_7gmj6"]
 line_spacing = 5.0
@@ -273,6 +281,61 @@ text = "Game Over!"
 label_settings = SubResource("LabelSettings_7gmj6")
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="PromotionContainer" type="CenterContainer" parent="Board/Control"]
+visible = false
+z_index = 2
+layout_mode = 0
+offset_right = 1056.0
+offset_bottom = 200.0
+mouse_filter = 0
+
+[node name="ColorRect" type="ColorRect" parent="Board/Control/PromotionContainer"]
+custom_minimum_size = Vector2(1056, 200)
+layout_mode = 2
+color = Color(0.13, 0.13, 0.13, 1)
+
+[node name="WhitePieces" type="HBoxContainer" parent="Board/Control/PromotionContainer"]
+visible = false
+custom_minimum_size = Vector2(500, 128)
+layout_mode = 2
+
+[node name="Knight" type="Button" parent="Board/Control/PromotionContainer/WhitePieces"]
+layout_mode = 2
+icon = ExtResource("2_r4pak")
+
+[node name="Bishop" type="Button" parent="Board/Control/PromotionContainer/WhitePieces"]
+layout_mode = 2
+icon = ExtResource("3_s3uqt")
+
+[node name="Rook" type="Button" parent="Board/Control/PromotionContainer/WhitePieces"]
+layout_mode = 2
+icon = ExtResource("4_aqseb")
+
+[node name="Queen" type="Button" parent="Board/Control/PromotionContainer/WhitePieces"]
+layout_mode = 2
+icon = ExtResource("5_m7vtb")
+
+[node name="BlackPieces" type="HBoxContainer" parent="Board/Control/PromotionContainer"]
+visible = false
+custom_minimum_size = Vector2(500, 128)
+layout_mode = 2
+
+[node name="Knight" type="Button" parent="Board/Control/PromotionContainer/BlackPieces"]
+layout_mode = 2
+icon = ExtResource("6_aqm0v")
+
+[node name="Bishop" type="Button" parent="Board/Control/PromotionContainer/BlackPieces"]
+layout_mode = 2
+icon = ExtResource("7_a5gfm")
+
+[node name="Rook" type="Button" parent="Board/Control/PromotionContainer/BlackPieces"]
+layout_mode = 2
+icon = ExtResource("8_1tkxn")
+
+[node name="Queen" type="Button" parent="Board/Control/PromotionContainer/BlackPieces"]
+layout_mode = 2
+icon = ExtResource("9_eq8cp")
 
 [node name="Tiles" type="Node2D" parent="Board"]
 position = Vector2(32, 32)

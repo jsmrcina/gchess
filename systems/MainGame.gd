@@ -20,6 +20,8 @@ var clock_times : Array[int] = [60 * 10, 60 * 10]
 var selected_tile : Coord
 var selected_piece : Piece
 
+var promotion_tile : Coord
+
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	move_generator = MoveGenerator.new()
@@ -29,7 +31,6 @@ func _ready():
 		markers.append([])
 		for c in range(0, Constants.BOARD_HEIGHT_IN_TILES):
 			var tileMarker = TileMarker.instantiate()
-			print("tile Marker: " + str(tileMarker.get_instance_id()))
 			tileMarker.position.x = c * Constants.TILE_WIDTH
 			tileMarker.position.y = r * Constants.TILE_HEIGHT
 			tileMarker.visible = false
@@ -45,6 +46,16 @@ func _ready():
 	
 	initialize_from_fen("kq6/4PPP1/8/3R4/8/5Q2/8/7K b KQkq - 1 2")
 	# initialize_from_fen("rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2")
+
+	# Set up the promotion buttons
+	$Board/Control/PromotionContainer/WhitePieces/Knight.connect("pressed", _on_promotion_button_pressed.bind("N"))
+	$Board/Control/PromotionContainer/WhitePieces/Bishop.connect("pressed", _on_promotion_button_pressed.bind("B"))
+	$Board/Control/PromotionContainer/WhitePieces/Rook.connect("pressed", _on_promotion_button_pressed.bind("R"))
+	$Board/Control/PromotionContainer/WhitePieces/Queen.connect("pressed", _on_promotion_button_pressed.bind("Q"))
+	$Board/Control/PromotionContainer/BlackPieces/Knight.connect("pressed", _on_promotion_button_pressed.bind("n"))
+	$Board/Control/PromotionContainer/BlackPieces/Bishop.connect("pressed", _on_promotion_button_pressed.bind("b"))
+	$Board/Control/PromotionContainer/BlackPieces/Rook.connect("pressed", _on_promotion_button_pressed.bind("r"))
+	$Board/Control/PromotionContainer/BlackPieces/Queen.connect("pressed", _on_promotion_button_pressed.bind("q"))
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -92,9 +103,6 @@ func start_game():
 	$Board/Control/GameOverContainer.visible = false
 	game_state = Globals.GameState.PLAYING
 
-#func get_turn():
-#	return player_turn
-
 func add_checkmate_to_move_list():
 	var idx = $UI/MoveList.add_item("#")
 	$UI/MoveList.set_item_disabled(idx, true)
@@ -107,6 +115,20 @@ func add_score_to_move_list(white_wins):
 	else:
 		var idx = $UI/MoveList.add_item("0-1")
 		$UI/MoveList.set_item_disabled(idx, true)
+
+func check_for_piece_promotion(dest_coord : Coord, piece : Piece):
+	if piece.get_type() == Globals.PieceType.PAWN:
+		if dest_coord.get_rank() == 1: # Black
+			game_state = Globals.GameState.PROMOTION
+			promotion_tile = dest_coord
+			$Board/Control/PromotionContainer.visible = true
+			$Board/Control/PromotionContainer/BlackPieces.visible = true
+		elif dest_coord.get_rank() == 8: # White
+			game_state = Globals.GameState.PROMOTION
+			promotion_tile = dest_coord
+			$Board/Control/PromotionContainer.visible = true
+			$Board/Control/PromotionContainer/WhitePieces.visible = true
+			
 
 func reset_clock():
 	start_turn_time = -1
@@ -174,8 +196,6 @@ func reset_move_list():
 	move_list_moves = 0
 
 func update_markers(valid_moves):
-	reset_markers()
-	
 	if selected_tile != null:
 		markers[selected_tile.get_row()][selected_tile.get_col()].set_color(Color.BLUE)
 		markers[selected_tile.get_row()][selected_tile.get_col()].visible = true
@@ -248,6 +268,7 @@ func handle_click(boundingRectangle, pos):
 	var new_selected_piece = board.get_coord(new_selected_coord)
 
 	if new_selected_coord.equal(selected_tile):
+		reset_markers()
 		selected_tile = null
 		selected_piece = null
 	elif selected_tile != null:
@@ -267,10 +288,11 @@ func handle_click(boundingRectangle, pos):
 						if move_type == MoveGenerator.MoveType.ATTACK:
 							# Take the piece
 							board.take_piece(new_selected_coord)
-							animate_piece_move(selected_tile, new_selected_coord, selected_piece)
+							await animate_piece_move(selected_tile, new_selected_coord, selected_piece)
 							var placed_in_check = board.update_incheck(move_generator)
 							board.update_castling_permission(selected_piece)
 							add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, true, placed_in_check, Globals.CastlingSide.NONE)
+							check_for_piece_promotion(new_selected_coord, selected_piece)
 							selected_tile = null
 							selected_piece = null
 							reset_half_moves()
@@ -280,10 +302,11 @@ func handle_click(boundingRectangle, pos):
 						elif move_type == MoveGenerator.MoveType.NORMAL_OR_ATTACK and Globals.get_opposite_color(
 								selected_piece.get_color()) == valid_move_destination_piece.get_color():
 							board.take_piece(new_selected_coord)
-							animate_piece_move(selected_tile, new_selected_coord, selected_piece)
+							await animate_piece_move(selected_tile, new_selected_coord, selected_piece)
 							var placed_in_check = board.update_incheck(move_generator)
 							board.update_castling_permission(selected_piece)
 							add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, true, placed_in_check, Globals.CastlingSide.NONE)
+							check_for_piece_promotion(new_selected_coord, selected_piece)
 							selected_tile = null
 							selected_piece = null
 							reset_half_moves()
@@ -293,7 +316,7 @@ func handle_click(boundingRectangle, pos):
 						else:
 							assert("Found a non-attack move onto a valid piece")
 					elif move_type == MoveGenerator.MoveType.NORMAL or move_type == MoveGenerator.MoveType.NORMAL_OR_ATTACK:
-						animate_piece_move(selected_tile, new_selected_coord, selected_piece)
+						await animate_piece_move(selected_tile, new_selected_coord, selected_piece)
 						
 						if selected_piece.get_type() == Globals.PieceType.PAWN:
 							reset_half_moves()
@@ -301,13 +324,14 @@ func handle_click(boundingRectangle, pos):
 						var placed_in_check = board.update_incheck(move_generator)
 						board.update_castling_permission(selected_piece)
 						add_move_to_move_list(selected_piece, selected_tile, new_selected_coord, false, placed_in_check, Globals.CastlingSide.NONE)
+						check_for_piece_promotion(new_selected_coord, selected_piece)
 						selected_tile = null
 						selected_piece = null
 						update_clock(board.get_player_turn(), true)
 						flip_turn()
 						found_dest = true
 					elif move_type == MoveGenerator.MoveType.CASTLE:
-						animate_piece_move(selected_tile, new_selected_coord, selected_piece)
+						await animate_piece_move(selected_tile, new_selected_coord, selected_piece)
 						
 						var type = Globals.CastlingSide.NONE
 						if new_selected_coord.get_file() == 'B':
@@ -350,7 +374,6 @@ func handle_click(boundingRectangle, pos):
 func create_piece_from_info(position, info):
 	var piece = Piece.instantiate()
 	piece.create(position, info)
-	print("board: " + str(piece) + " " + str(piece.get_instance_id()))
 	board.set_coord(position, piece)
 
 func place_piece_visuals():
@@ -437,6 +460,7 @@ func reset_pieces():
 
 func animate_piece_move(source_tile, destination_tile, piece):
 	game_state = Globals.GameState.ANIMATING
+	reset_markers()
 	var i = 0.0
 	while i < 1.0:
 		var sourceX = (source_tile.get_col() * Constants.TILE_WIDTH) + Constants.PIECE_OFFSET
@@ -480,3 +504,17 @@ func _on_fen_copy_gui_input(event):
 		DisplayServer.clipboard_set(line[2])
 		$Board/Control/FENCopyContainer.visible = false
 		game_state = Globals.GameState.UICLOSING
+
+
+func _on_promotion_button_pressed(type : String):
+	var piece = board.get_coord(promotion_tile)
+	board.set_coord(promotion_tile, null)
+	piece.queue_free()
+	create_piece_from_info(promotion_tile, Globals.piece_info_from_fen_string(type))
+	$Board/Tiles.add_child(board.get_coord(promotion_tile))
+	promotion_tile = null
+	game_state = Globals.GameState.PLAYING
+	
+	$Board/Control/PromotionContainer.visible = false
+	$Board/Control/PromotionContainer/WhitePieces.visible = false
+	$Board/Control/PromotionContainer/BlackPieces.visible = false

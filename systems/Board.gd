@@ -164,6 +164,7 @@ func update_incheck(move_generator : MoveGenerator) -> bool:
 			if piece_at_attacked_location.get_type() == Globals.PieceType.KING and piece_at_attacked_location.get_color() == Globals.get_opposite_color(
 					player_turn):
 				in_check[Globals.get_opposite_color(player_turn)] = true
+				print("In Check! " + str(Globals.get_opposite_color(player_turn)))
 				return true
 
 	return false
@@ -180,8 +181,6 @@ func update_castling_permission(moved_piece : Piece):
 			castling_permission[player_turn][Globals.CastlingSide.QUEEN] = false
 		else:
 			castling_permission[player_turn][Globals.CastlingSide.KING] = false
-
-	print(str(castling_permission))
 
 func is_move_king_safe(move_generator : MoveGenerator, source_tile : Coord, dest_tile : Coord) -> bool:
 	var king_safe = true
