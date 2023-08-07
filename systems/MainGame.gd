@@ -47,8 +47,10 @@ func _ready():
 	$UI/Clock/WhiteTurnMarker.set_color(Globals.WHITE_COLOR)
 	$UI/Clock/BlackTurnMarker.set_color(Globals.BLACK_COLOR)
 	
-	initialize_from_fen("7K/8/8/8/3B4/8/3Q4/1k6 w KQkq - 1 2")
-	# initialize_from_fen("rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2")
+	reset_move_list()
+	
+	#initialize_from_fen("7K/8/8/8/3B4/8/3Q4/1k6 w KQkq - 1 2")
+	initialize_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 
 	# Set up the promotion buttons
 	$Board/Control/PromotionContainer/WhitePieces/Knight.connect("pressed", _on_promotion_button_pressed.bind("N"))
@@ -244,6 +246,9 @@ func reset_markers():
 
 func reset_move_list():
 	$UI/MoveList.clear()
+	$UI/MoveList.add_item("Turn")
+	$UI/MoveList.add_item("White")
+	$UI/MoveList.add_item("Black")
 	move_list_moves = 0
 
 func update_markers(valid_moves):
@@ -282,8 +287,12 @@ func update_check_marker():
 # Reference: https://en.wikipedia.org/wiki/Algebraic_notation_(chess)
 func add_move_to_move_list(piece : Piece, source : Coord, dest : Coord, capture : bool, placed_in_check : bool, castling_side : Globals.CastlingSide, promotion_piece : String):
 	
-	var final_string = str(move_list_moves) + ": "
 	move_list_moves = move_list_moves + 1
+	if move_list_moves % 2 == 1:
+		var idx = $UI/MoveList.add_item(str(int(move_list_moves / 2) + 1) + ": ")
+		$UI/MoveList.set_item_disabled(idx, true)
+	
+	var final_string = ""	
 	if capture:
 		var piece_as_string = piece.to_string()
 		if piece_as_string == "":
@@ -376,9 +385,9 @@ func handle_click(boundingRectangle, pos):
 						await animate_piece_move(selected_tile, new_selected_coord, selected_piece)
 						
 						var type = Globals.CastlingSide.NONE
-						if new_selected_coord.get_file() == 'B':
+						if new_selected_coord.get_file() == 'C':
 							var rook_coord = Coord.new(selected_tile.get_rank(), 'A')
-							var rook_destination = Coord.new(selected_tile.get_rank(), 'C')
+							var rook_destination = Coord.new(selected_tile.get_rank(), 'D')
 							var rook_piece = board.get_coord(rook_coord)
 							animate_piece_move(rook_coord, rook_destination, rook_piece)
 							type = Globals.CastlingSide.QUEEN

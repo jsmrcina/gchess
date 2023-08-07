@@ -359,10 +359,12 @@ offset_bottom = 1034.0
 
 [node name="MoveList" type="ItemList" parent="UI"]
 layout_mode = 0
-offset_right = 200.0
+offset_right = 225.0
 offset_bottom = 1024.0
 focus_mode = 0
 allow_search = false
+max_columns = 3
+fixed_column_width = 63
 
 [node name="NewGame" type="Button" parent="UI"]
 layout_mode = 0

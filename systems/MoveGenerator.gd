@@ -24,7 +24,7 @@ func add_castling_move(board : Board, turn : Globals.PieceColor, type : Globals.
 	
 	var file = 'G'
 	if type == Globals.CastlingSide.QUEEN:
-		file = 'B'
+		file = 'C'
 		
 	possible_moves.append([MoveType.CASTLE, Coord.new(rank, file)])
 
@@ -167,28 +167,31 @@ func determine_possible_king_moves(piece : Piece, location : Coord, board : Boar
 	if piece.get_color() == Globals.PieceColor.BLACK:
 		rank = 8
 
-	var rookCoord = Coord.new(rank, 'H')
-	var knightCoord = Coord.new(rank, 'G')
-	var bishopCoord = Coord.new(rank, 'F')
-	var kingCoord = Coord.new(rank, 'E')
-	var queenCoord = Coord.new(rank, 'D')
+	var RKCoord = Coord.new(rank, 'H')
+	var NKCoord = Coord.new(rank, 'G')
+	var BKCoord = Coord.new(rank, 'F')
+	var KCoord = Coord.new(rank, 'E')
+	var QCoord = Coord.new(rank, 'D')
+	var BQCoord = Coord.new(rank, 'C')
+	var NQCoord = Coord.new(rank, 'B')
+	var RQCoord = Coord.new(rank, 'A')	
 	var castling_permission = board.get_castling_permission()
 	
 	if castling_permission[piece.get_color()][Globals.CastlingSide.KING]:
-		var knightExists = (board.get_coord(knightCoord) != null)
-		var bishopExists = (board.get_coord(bishopCoord) != null)
+		var knightExists = (board.get_coord(NKCoord) != null)
+		var bishopExists = (board.get_coord(BKCoord) != null)
 		if !knightExists and !bishopExists:
 			# Check to see if any of the pieces is under attack
-			var checkCoords = [rookCoord, knightCoord, bishopCoord, kingCoord]
+			var checkCoords = [RKCoord, NKCoord, BKCoord, KCoord]
 			if not any_attacked(attacked_locations, checkCoords):
 				add_castling_move(board, piece.get_color(), Globals.CastlingSide.KING, possible_moves)
 	
 	if castling_permission[piece.get_color()][Globals.CastlingSide.QUEEN]:
-		var bishopExists = (board.get_coord(bishopCoord) != null)
-		var knightExists = (board.get_coord(knightCoord) != null)
-		var queenExists = (board.get_coord(queenCoord) != null)
+		var bishopExists = (board.get_coord(BQCoord) != null)
+		var knightExists = (board.get_coord(NQCoord) != null)
+		var queenExists = (board.get_coord(QCoord) != null)
 		if !knightExists and !bishopExists and !queenExists:
-			var checkCoords = [rookCoord, knightCoord, bishopCoord, kingCoord, queenCoord]
+			var checkCoords = [RQCoord, NQCoord, BQCoord, KCoord, QCoord]
 			if not any_attacked(attacked_locations, checkCoords):
 				add_castling_move(board, piece.get_color(), Globals.CastlingSide.QUEEN, possible_moves)
 
