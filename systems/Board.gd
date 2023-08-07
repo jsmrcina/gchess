@@ -1,4 +1,4 @@
-extends Object
+extends RefCounted
 
 class_name Board
 
@@ -187,9 +187,9 @@ func is_move_king_safe(move_generator : MoveGenerator, source_tile : Coord, dest
 	print("king safe attacked locations: " + str(attacked_locations))
 	for attack in attacked_locations:
 		var source_coord = attack[0]
-
 		var destination_coord = attack[3]
 		if destination_coord.equal(current_king[0]):
+			print(str(source_coord) + " " + str(destination_coord))
 			king_safe = false
 			break
 
@@ -236,14 +236,14 @@ func is_checkmate(move_generator : MoveGenerator) -> bool:
 	if attacks_participating_in_check.size() == 1:
 		# Can the king move?
 		var valid_king_moves = move_generator.get_valid_moves_for_opposite_player(checked_king[1], checked_king[0], self, false)
-		#print("valid king moves: " + str(valid_king_moves))
+		print("valid king moves: " + str(valid_king_moves))
 		if valid_king_moves.size() == 0:
 			var attacking_piece_coord = attacks_participating_in_check[0][0]
 			var attacking_piece = attacks_participating_in_check[0][1]
 			var valid_attacker_moves = move_generator.get_valid_moves_for_current_player(attacking_piece, attacking_piece_coord, self, false)
 
 			var tiles_between_attacker_and_king = move_generator.determine_line_between_coordinates(attackers_participating_in_check[0][0], checked_king[0])
-			#print("Tiles between king and attacker: " + str(tiles_between_attacker_and_king))
+			print("Tiles between king and attacker: " + str(tiles_between_attacker_and_king))
 
 			# Can someone intercept or take the piece
 			for piece_tuple in get_pieces_by_color(Globals.get_opposite_color(player_turn)):
@@ -274,10 +274,11 @@ func is_checkmate(move_generator : MoveGenerator) -> bool:
 				var valid_move = move[1]
 				var king_safe = is_move_king_safe(move_generator, checked_king[0], valid_move, Globals.get_opposite_color(get_player_turn()))
 				if king_safe:
-					#print(str(move_type) + " " + str(valid_move))
+					print(str(move_type) + " " + str(valid_move))
 					print("King can move")
-				else:
-					return true
+					return false
+				
+			return true
 	# Double check (only resolved by moving)
 	else:
 		var valid_king_moves = move_generator.get_valid_moves_for_opposite_player(checked_king[1], checked_king[0], self, false)

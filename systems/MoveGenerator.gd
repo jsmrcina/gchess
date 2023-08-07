@@ -1,4 +1,5 @@
-extends Node
+extends RefCounted
+
 class_name MoveGenerator
 
 # var Coord = load("res://systems/coord.gd")
@@ -295,7 +296,7 @@ func determine_in_check(board : Board, to_determine_color : Globals.PieceColor) 
 		var piece_at_attacked_location = board.get_coord(destination_coord)
 		if piece_at_attacked_location != null:
 			if piece_at_attacked_location.get_type() == Globals.PieceType.KING and piece_at_attacked_location.get_color() == to_determine_color:
-				print("In Check! " + str(to_determine_color))
+				# print("In Check! " + str(to_determine_color))
 				return true
 
 	return false

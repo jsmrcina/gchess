@@ -36,6 +36,8 @@ enum GameState {
 static var WHITE_COLOR = Color("#ffffff")
 static var BLACK_COLOR = Color("#000000")
 
+static var pieceManager = PieceManager.new()
+
 static func get_opposite_color(color):
 	if color == Globals.PieceColor.WHITE:
 		return Globals.PieceColor.BLACK
@@ -63,7 +65,6 @@ static func piece_info_from_fen_string(string):
 		toReturn.append(Globals.PieceColor.WHITE)
 	else:
 		toReturn.append(Globals.PieceColor.BLACK)
-		
-	toReturn.append(PieceManager.new().get_texture(string))
-
+	
+	toReturn.append(pieceManager.get_texture(string))
 	return toReturn

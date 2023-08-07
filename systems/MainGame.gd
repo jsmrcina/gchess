@@ -50,7 +50,7 @@ func _ready():
 	reset_move_list()
 	
 	#initialize_from_fen("7K/8/8/8/3B4/8/3Q4/1k6 w KQkq - 1 2")
-	initialize_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+	initialize_from_fen("2kr4/p3R3/B1p4p/4P3/1p1pP1r1/8/PPP3PP/2K4R b - - 0 0")
 
 	# Set up the promotion buttons
 	$Board/Control/PromotionContainer/WhitePieces/Knight.connect("pressed", _on_promotion_button_pressed.bind("N"))

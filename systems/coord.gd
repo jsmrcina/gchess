@@ -1,11 +1,9 @@
-class_name Coord
+extends RefCounted
 
-extends Object
+class_name Coord
 
 var rank : int
 var file : String
-
-# var Coord = load("res://systems/coord.gd")
 
 func _init(r: int, f: String):
 	rank = r
