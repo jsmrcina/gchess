@@ -158,7 +158,6 @@ func determine_possible_king_moves(piece : Piece, location : Coord, board : Boar
 	if not include_all_attacks:
 		attacked_locations = determine_all_attacked_squares(board, Globals.get_opposite_color(color))
 
-	# TODO: Bug, if the direction you move WILL BE in check, then it's not a valid move (currently it's considered valid)
 	for d in Direction:
 		var d_as_int = Direction[d]
 		add_normal_or_attack_move_if_not_attacked(board, location, location.get_in_direction(d_as_int), color, possible_moves, attacked_locations)

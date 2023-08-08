@@ -414,7 +414,15 @@ func handle_click(boundingRectangle, pos):
 		selected_piece = new_selected_piece
 		
 		if selected_piece != null:
+			# TODO: This is kind of a hack -- this really should be solved during move generation
+			var final_moves = []
 			markers_moves = move_generator.get_valid_moves_for_current_player(selected_piece, selected_tile, board, false)
+			for move in markers_moves:
+				var king_safe = board.is_move_king_safe(move_generator, selected_tile, move[1], board.get_player_turn())
+				if king_safe:
+					final_moves.append(move)
+					
+			markers_moves = final_moves
 	
 	update_markers(markers_moves)
 	update_check_marker()
