@@ -159,8 +159,8 @@ func determine_possible_pawn_moves(piece : Piece, location : Coord, board : Boar
 	elif step_left.is_on_board() and board.get_en_passant_coord() != null and board.get_en_passant_coord().equal(step_left):
 		add_en_passant_if_empty(board, left_diag_step, possible_moves)
 		en_passant = true
-	else:
-		add_normal_move_if_empty(board, step, possible_moves)
+	
+	add_normal_move_if_empty(board, step, possible_moves)
 	
 	if location.get_rank() == piece.get_starting_rank_position():
 		add_normal_move_if_empty(board, step.get_in_direction(piece.get_direction()), possible_moves)
