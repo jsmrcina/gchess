@@ -9,6 +9,7 @@ var board : Array = []
 var player_turn : Globals.PieceColor
 var in_check : Array[bool] = [false, false]
 var castling_permission : Array = [[true, true], [true, true]] # King / Queen side
+var en_passant_coord : Coord
 
 func _init():
 	for r in range(0, Constants.BOARD_WIDTH_IN_TILES):
@@ -108,13 +109,22 @@ func export_to_fen():
 	if !any_castling:
 		fen_string += "-"
 
-	# TODO: En Passant
-	fen_string += " -"
+	fen_string += " "
+	if en_passant_coord != null:
+		fen_string += en_passant_coord.to_string() 
+	else:
+		fen_string += "-"
 
 	# TODO: Move half moves and full moves into here
 	fen_string += " 0 0"
 
 	return fen_string
+
+func set_en_passant_coord(coord : Coord):
+	en_passant_coord = coord
+
+func get_en_passant_coord():
+	return en_passant_coord
 
 func reset_in_check():
 	in_check = [false, false]
@@ -184,7 +194,7 @@ func is_move_king_safe(move_generator : MoveGenerator, source_tile : Coord, dest
 	var current_king = after_move_board.get_king_by_color(color)
 
 	var attacked_locations = move_generator.determine_all_attacked_squares(after_move_board, Globals.get_opposite_color(color))
-	print("king safe attacked locations: " + str(attacked_locations))
+	#print("king safe attacked locations: " + str(attacked_locations))
 	for attack in attacked_locations:
 		var source_coord = attack[0]
 		var destination_coord = attack[3]

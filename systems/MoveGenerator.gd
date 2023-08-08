@@ -12,7 +12,8 @@ enum MoveType
 	NORMAL = 0,
 	ATTACK = 1,
 	NORMAL_OR_ATTACK = 2,
-	CASTLE = 3
+	CASTLE = 3,
+	EN_PASSANT = 4
 }
 
 var possible_moves : Array[Coord] = []
@@ -36,6 +37,13 @@ func add_normal_move_if_empty(board : Board, new_move : Coord, possible_moves : 
 
 	if board.get_coord(new_move) == null:
 		possible_moves.append([MoveType.NORMAL, new_move])
+		
+func add_en_passant_if_empty(board : Board, new_move : Coord, possible_moves : Array):
+	if not new_move.is_on_board():
+		return
+
+	if board.get_coord(new_move) == null:
+		possible_moves.append([MoveType.EN_PASSANT, new_move])
 
 func any_attacked(attacked_locations : Array, check_list : Array) -> bool:
 	for move in check_list:
@@ -139,19 +147,31 @@ func determine_all_attacked_squares(board : Board, color : Globals.PieceColor):
 func determine_possible_pawn_moves(piece : Piece, location : Coord, board : Board, include_all_attacks : bool, possible_moves : Array):
 	var step = location.get_in_direction(piece.get_direction())
 
-	add_normal_move_if_empty(board, step, possible_moves)
+	var step_right = location.get_in_direction(Globals.Direction.FILE_UP)
+	var step_left = location.get_in_direction(Globals.Direction.FILE_DOWN)
+	var right_diag_step = step.get_in_direction(Direction.FILE_UP)
+	var left_diag_step = step.get_in_direction(Direction.FILE_DOWN)
+	
+	var en_passant = false
+	if step_right.is_on_board() and board.get_en_passant_coord() != null and board.get_en_passant_coord().equal(step_right):
+		add_en_passant_if_empty(board, right_diag_step, possible_moves)
+		en_passant = true
+	elif step_left.is_on_board() and board.get_en_passant_coord() != null and board.get_en_passant_coord().equal(step_left):
+		add_en_passant_if_empty(board, left_diag_step, possible_moves)
+		en_passant = true
+	else:
+		add_normal_move_if_empty(board, step, possible_moves)
+	
 	if location.get_rank() == piece.get_starting_rank_position():
 		add_normal_move_if_empty(board, step.get_in_direction(piece.get_direction()), possible_moves)
 
-	var east_diag_step = step.get_in_direction(Direction.FILE_UP)
-	var west_diag_step = step.get_in_direction(Direction.FILE_DOWN)
-
-	if include_all_attacks:
-		add_attack_move(east_diag_step, possible_moves)
-		add_attack_move(west_diag_step, possible_moves)
-	else:
-		add_attack_move_if_enemy(location, board, east_diag_step, possible_moves)
-		add_attack_move_if_enemy(location, board, west_diag_step, possible_moves)
+	if not en_passant:
+		if include_all_attacks:
+			add_attack_move(right_diag_step, possible_moves)
+			add_attack_move(left_diag_step, possible_moves)
+		else:
+			add_attack_move_if_enemy(location, board, right_diag_step, possible_moves)
+			add_attack_move_if_enemy(location, board, left_diag_step, possible_moves)
 
 func determine_possible_king_moves(piece : Piece, location : Coord, board : Board, color : Globals.PieceColor, include_all_attacks : bool, possible_moves : Array):
 	var attacked_locations = []

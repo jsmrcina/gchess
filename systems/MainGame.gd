@@ -1,7 +1,6 @@
 extends Node2D
 
 # Missing rules
-# En Passant
 # Three-fold repetition
 # Fifty move rule
 
@@ -51,6 +50,9 @@ func _ready():
 	
 	#initialize_from_fen("7K/8/8/8/3B4/8/3Q4/1k6 w KQkq - 1 2")
 	initialize_from_fen("2kr4/p3R3/B1p4p/4P3/1p1pP1r1/8/PPP3PP/2K4R b - - 0 0")
+	
+	# TODO: EP test
+	# initialize_from_fen("rnbqkbnr/ppp1ppp1/7p/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d5 3 2")
 
 	# Set up the promotion buttons
 	$Board/Control/PromotionContainer/WhitePieces/Knight.connect("pressed", _on_promotion_button_pressed.bind("N"))
@@ -188,7 +190,7 @@ func update_clock(clock_color, turn_over):
 
 	return ran_out_of_time
 
-func flip_turn(source_coord : Coord, dest_coord : Coord, piece : Piece, capture : bool, placed_in_check : bool, castling_side : Globals.CastlingSide, promotion_type : String):
+func flip_turn(source_coord : Coord, dest_coord : Coord, piece : Piece, capture : bool, placed_in_check : bool, en_passant : bool, castling_side : Globals.CastlingSide, promotion_type : String):
 	var is_piece_being_promoted = false
 	if promotion_type == "":
 		# If the promotion type is set, a piece was already promoted
@@ -212,7 +214,19 @@ func flip_turn(source_coord : Coord, dest_coord : Coord, piece : Piece, capture 
 			selected_piece = null
 			$Board/Control/GameOverContainer.visible = true
 		else:
-			add_move_to_move_list(piece, source_coord, dest_coord, capture, placed_in_check, castling_side, promotion_type)
+			if piece.get_type() == Globals.PieceType.PAWN:
+				if abs(source_coord.get_row() - dest_coord.get_row()) == 2:
+					# This was a 2 step move, en passant may be allowed next turn
+					board.set_en_passant_coord(dest_coord)
+					print("set ep: " + str(dest_coord))
+				else:
+					board.set_en_passant_coord(null)
+					print("set ep: null")
+			else:
+				board.set_en_passant_coord(null)
+				print("set ep: null")
+			
+			add_move_to_move_list(piece, source_coord, dest_coord, capture, placed_in_check, en_passant, castling_side, promotion_type)
 			selected_tile = null
 			selected_piece = null
 			update_clock(board.get_player_turn(), true)
@@ -263,7 +277,7 @@ func update_markers(valid_moves):
 			var valid_move = item[1]
 			var color = Color.GREEN
 			
-			if move_type == MoveGenerator.MoveType.ATTACK:
+			if move_type == MoveGenerator.MoveType.ATTACK or move_type == MoveGenerator.MoveType.EN_PASSANT:
 				color = Color.RED
 			elif move_type == MoveGenerator.MoveType.NORMAL_OR_ATTACK:
 				var destination_piece = board.get_coord(valid_move)
@@ -285,7 +299,7 @@ func update_check_marker():
 
 # Note: Does not do en passant, move disambiguation, or promotion
 # Reference: https://en.wikipedia.org/wiki/Algebraic_notation_(chess)
-func add_move_to_move_list(piece : Piece, source : Coord, dest : Coord, capture : bool, placed_in_check : bool, castling_side : Globals.CastlingSide, promotion_piece : String):
+func add_move_to_move_list(piece : Piece, source : Coord, dest : Coord, capture : bool, placed_in_check : bool, en_passant : bool, castling_side : Globals.CastlingSide, promotion_piece : String):
 	
 	move_list_moves = move_list_moves + 1
 	if move_list_moves % 2 == 1:
@@ -297,6 +311,8 @@ func add_move_to_move_list(piece : Piece, source : Coord, dest : Coord, capture 
 		var piece_as_string = piece.to_string()
 		if piece_as_string == "":
 			final_string += source.get_file().to_lower() + "x" + dest.to_string()
+			if en_passant:
+				final_string += " ep"
 		else:
 			final_string += piece_as_string + "x" + dest.to_string()
 	else:
@@ -358,7 +374,7 @@ func handle_click(boundingRectangle, pos):
 							var placed_in_check = board.update_incheck(move_generator)
 							board.update_castling_permission(selected_piece)
 							reset_half_moves()
-							flip_turn(selected_tile, new_selected_coord, selected_piece, true, placed_in_check, Globals.CastlingSide.NONE, "")
+							flip_turn(selected_tile, new_selected_coord, selected_piece, true, placed_in_check, false, Globals.CastlingSide.NONE, "")
 							found_dest = true
 						elif move_type == MoveGenerator.MoveType.NORMAL_OR_ATTACK and Globals.get_opposite_color(
 								selected_piece.get_color()) == valid_move_destination_piece.get_color():
@@ -367,7 +383,7 @@ func handle_click(boundingRectangle, pos):
 							var placed_in_check = board.update_incheck(move_generator)
 							board.update_castling_permission(selected_piece)
 							reset_half_moves()
-							flip_turn(selected_tile, new_selected_coord, selected_piece, true, placed_in_check, Globals.CastlingSide.NONE, "")
+							flip_turn(selected_tile, new_selected_coord, selected_piece, true, placed_in_check, false, Globals.CastlingSide.NONE, "")
 							found_dest = true
 						else:
 							assert("Found a non-attack move onto a valid piece")
@@ -379,7 +395,18 @@ func handle_click(boundingRectangle, pos):
 
 						var placed_in_check = board.update_incheck(move_generator)
 						board.update_castling_permission(selected_piece)
-						flip_turn(selected_tile, new_selected_coord, selected_piece, false, placed_in_check, Globals.CastlingSide.NONE, "")
+						flip_turn(selected_tile, new_selected_coord, selected_piece, false, placed_in_check, false, Globals.CastlingSide.NONE, "")
+						found_dest = true
+					elif move_type == MoveGenerator.MoveType.EN_PASSANT:
+						await animate_piece_move(selected_tile, new_selected_coord, selected_piece)
+						reset_half_moves()
+						
+						# Need to take the en-passant pawn
+						board.take_piece(board.get_en_passant_coord())
+						
+						var placed_in_check = board.update_incheck(move_generator)
+						board.update_castling_permission(selected_piece)
+						flip_turn(selected_tile, new_selected_coord, selected_piece, true, placed_in_check, true, Globals.CastlingSide.NONE, "")
 						found_dest = true
 					elif move_type == MoveGenerator.MoveType.CASTLE:
 						await animate_piece_move(selected_tile, new_selected_coord, selected_piece)
@@ -399,7 +426,7 @@ func handle_click(boundingRectangle, pos):
 							type = Globals.CastlingSide.KING
 						
 						board.update_castling_permission(selected_piece)
-						flip_turn(selected_tile, new_selected_coord, selected_piece, false, false, type, "")
+						flip_turn(selected_tile, new_selected_coord, selected_piece, false, false, false, type, "")
 						found_dest = true
 
 				if found_dest:
@@ -473,8 +500,10 @@ func initialize_from_fen(fen):
 		# Castling
 		board.set_castling_permission_from_fen_string(fields[2])
 
-		# TODO: Deal with en-passant
-		# Fields[3] is en passant, ignore fornow
+		# En-passant
+		if fields[3] != "-":
+			var ep_coord = Coord.new(int(fields[3][1]), fields[3][0].to_upper())
+			board.set_en_passant_coord(ep_coord)
 
 		# Halfmove clock
 		half_moves = int(fields[4])
@@ -583,7 +612,7 @@ func _on_promotion_button_pressed(type : String):
 	
 	# Promotion may have caused a king to become in-check
 	var placed_in_check = board.update_incheck(move_generator)
-	flip_turn(promotion_source, promotion_dest, piece, promotion_capture, placed_in_check, Globals.CastlingSide.NONE, type)
+	flip_turn(promotion_source, promotion_dest, piece, promotion_capture, placed_in_check, false, Globals.CastlingSide.NONE, type)
 	reset_markers()
 	update_check_marker()
 	
