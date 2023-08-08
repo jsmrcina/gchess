@@ -2,7 +2,6 @@ extends Node2D
 
 # Missing rules
 # Three-fold repetition
-# Fifty move rule
 
 var Piece = preload("res://entities/piece.tscn")
 var TileMarker = preload("res://entities/tile_marker.tscn")
@@ -108,9 +107,13 @@ func start_game():
 	$UI/Clock/WhiteTurnMarker.visible = true
 	$UI/Clock/BlackTurnMarker.visible = false
 	$Board/Control/GameOverContainer.visible = false
+	$UI/ForceDraw.visible = false
+	$UI/ForceDraw.disabled = false
 	game_state = Globals.GameState.PLAYING
 
 func add_checkmate_to_move_list():
+	add_index_to_move_list()
+	
 	var idx = $UI/MoveList.add_item("#")
 	$UI/MoveList.set_item_disabled(idx, true)
 
@@ -200,6 +203,10 @@ func flip_turn(source_coord : Coord, dest_coord : Coord, piece : Piece, capture 
 		var is_checkmate = board.is_checkmate(move_generator)
 		var is_stalemate = board.is_stalemate(move_generator)
 		
+		var is_50_move_rule_satisfied = (half_moves >= 100)
+		if is_50_move_rule_satisfied:
+			$UI/ForceDraw.visible = true
+		
 		if is_checkmate:
 			game_state = Globals.GameState.CHECKMATE
 			add_checkmate_to_move_list()
@@ -249,6 +256,7 @@ func flip_turn(source_coord : Coord, dest_coord : Coord, piece : Piece, capture 
 
 func reset_half_moves():
 	half_moves = 0
+	$UI/ForceDraw.visible = false
 
 func reset_full_moves():
 	full_moves = 1
@@ -297,14 +305,17 @@ func update_check_marker():
 		markers[king_info[0].get_row()][king_info[0].get_col()].set_color(Color.CRIMSON)
 		markers[king_info[0].get_row()][king_info[0].get_col()].visible = true
 
-# Note: Does not do en passant, move disambiguation, or promotion
-# Reference: https://en.wikipedia.org/wiki/Algebraic_notation_(chess)
-func add_move_to_move_list(piece : Piece, source : Coord, dest : Coord, capture : bool, placed_in_check : bool, en_passant : bool, castling_side : Globals.CastlingSide, promotion_piece : String):
-	
+func add_index_to_move_list():
 	move_list_moves = move_list_moves + 1
 	if move_list_moves % 2 == 1:
 		var idx = $UI/MoveList.add_item(str(int(move_list_moves / 2) + 1) + ": ")
 		$UI/MoveList.set_item_disabled(idx, true)
+
+# Note: Does not do en passant, move disambiguation, or promotion
+# Reference: https://en.wikipedia.org/wiki/Algebraic_notation_(chess)
+func add_move_to_move_list(piece : Piece, source : Coord, dest : Coord, capture : bool, placed_in_check : bool, en_passant : bool, castling_side : Globals.CastlingSide, promotion_piece : String):
+	
+	add_index_to_move_list()
 	
 	var final_string = ""	
 	if capture:
@@ -626,3 +637,12 @@ func _on_promotion_button_pressed(type : String):
 	$Board/Control/PromotionContainer.visible = false
 	$Board/Control/PromotionContainer/WhitePieces.visible = false
 	$Board/Control/PromotionContainer/BlackPieces.visible = false
+
+func _on_force_draw_pressed():
+	game_state = Globals.GameState.DRAW
+	
+	add_index_to_move_list()
+	var idx = $UI/MoveList.add_item("1/2-1/2")
+	$UI/MoveList.set_item_disabled(idx, true)
+	$Board/Control/GameOverContainer/GameOver.text = "Draw"
+	$UI/ForceDraw.disabled = true

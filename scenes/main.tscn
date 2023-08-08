@@ -386,6 +386,16 @@ offset_right = 400.0
 offset_bottom = 112.0
 text = "Import From FEN"
 
+[node name="ForceDraw" type="Button" parent="UI"]
+visible = false
+layout_mode = 0
+offset_left = 250.0
+offset_top = 540.0
+offset_right = 400.0
+offset_bottom = 572.0
+theme_override_colors/font_color = Color(0.894118, 0.305882, 0.254902, 1)
+text = "Force Draw"
+
 [node name="Clock" type="Control" parent="UI"]
 layout_mode = 3
 anchors_preset = 0
@@ -451,3 +461,4 @@ offset_bottom = 450.0
 [connection signal="pressed" from="UI/NewGame" to="." method="_on_new_game_button_pressed"]
 [connection signal="pressed" from="UI/ExportToFEN" to="." method="_on_export_to_fen_pressed_button"]
 [connection signal="pressed" from="UI/ImportFromFEN" to="." method="_on_import_from_fen_pressed_button"]
+[connection signal="pressed" from="UI/ForceDraw" to="." method="_on_force_draw_pressed"]
