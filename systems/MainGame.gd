@@ -1,7 +1,7 @@
 extends Node2D
 
 # Missing rules
-# Three-fold repetition
+# Draw by Insufficient material
 
 var Piece = preload("res://entities/piece.tscn")
 var TileMarker = preload("res://entities/tile_marker.tscn")
