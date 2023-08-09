@@ -290,8 +290,6 @@ func determine_line_between_coordinates(source : Coord, dest : Coord):
 	elif dest.get_col() - source.get_col() > 0:
 		dcol = 1
 	
-	print(str(source) + " " + str(dest) + " " + str(drow) + " " + str(dcol))
-	
 	var result = []
 	var cur = Coord.new(source.get_rank(), source.get_file())
 	while not cur.equal(dest):
@@ -306,7 +304,6 @@ func determine_line_between_coordinates(source : Coord, dest : Coord):
 
 func determine_in_check(board : Board, to_determine_color : Globals.PieceColor) -> bool:
 	var attacked_locations = determine_all_attacked_squares(board, Globals.get_opposite_color(to_determine_color))
-	print(str(attacked_locations))
 	for attack in attacked_locations:
 		var source_coord = attack[0]
 		var piece_at_source = attack[1]
@@ -315,7 +312,6 @@ func determine_in_check(board : Board, to_determine_color : Globals.PieceColor) 
 		var piece_at_attacked_location = board.get_coord(destination_coord)
 		if piece_at_attacked_location != null:
 			if piece_at_attacked_location.get_type() == Globals.PieceType.KING and piece_at_attacked_location.get_color() == to_determine_color:
-				# print("In Check! " + str(to_determine_color))
 				return true
 
 	return false

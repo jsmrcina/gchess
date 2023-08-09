@@ -7,14 +7,14 @@ var file : String
 
 func _init(r: int, f: String):
 	rank = r
-	file = f
+	file = f.to_lower()
 
 func set_rank_from_index(index : int):
 	# The top of the board is 8, but our array is indexed from 0
 	rank = Constants.BOARD_HEIGHT_IN_TILES - index
 
 func set_file(str : String):
-	file = str
+	file = str.to_lower()
 
 func get_rank() -> int:
 	return rank
@@ -23,13 +23,13 @@ func get_row() -> int:
 	return Constants.BOARD_HEIGHT_IN_TILES - rank
 
 static func file_from_col(col) -> String:
-	return char(col + 65)
+	return char(col + 97)
 
 func get_file() -> String:
 	return file
 
 func get_col() -> int:
-	var file_as_col = file.unicode_at(0) - 65
+	var file_as_col = file.unicode_at(0) - 97
 	return file_as_col
 
 func get_file_up():
@@ -81,4 +81,4 @@ func equal(other):
 		return false
 
 func _to_string():
-	return str(get_file()).to_upper() + str(get_rank())
+	return str(get_file()).to_lower() + str(get_rank())

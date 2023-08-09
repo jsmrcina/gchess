@@ -13,6 +13,7 @@ var half_moves : int = 0
 var full_moves : int = 1
 var move_list_moves : int = 0
 var move_generator : MoveGenerator
+var position_tracker : PositionTracker
 var start_turn_time : int = -1
 var clock_times : Array[int] = [60 * 10, 60 * 10]
 
@@ -26,6 +27,7 @@ var promotion_capture : bool = false
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	move_generator = MoveGenerator.new()
+	position_tracker = PositionTracker.new()
 	board = Board.new()
 	
 	for r in range(0, Constants.BOARD_WIDTH_IN_TILES):
@@ -109,15 +111,18 @@ func start_game():
 	$Board/Control/GameOverContainer.visible = false
 	$UI/ForceDraw.visible = false
 	$UI/ForceDraw.disabled = false
+	position_tracker.reset()
 	game_state = Globals.GameState.PLAYING
 
 func add_checkmate_to_move_list():
+	finish_row_on_move_list()
 	add_index_to_move_list()
-	
 	var idx = $UI/MoveList.add_item("#")
 	$UI/MoveList.set_item_disabled(idx, true)
 
 func add_score_to_move_list_and_set_game_over_label():
+	finish_row_on_move_list()
+	add_index_to_move_list()
 	if game_state == Globals.GameState.CHECKMATE:
 		if board.get_player_turn() == Globals.PieceColor.WHITE:
 			var idx = $UI/MoveList.add_item("1-0")
@@ -207,6 +212,10 @@ func flip_turn(source_coord : Coord, dest_coord : Coord, piece : Piece, capture 
 		if is_50_move_rule_satisfied:
 			$UI/ForceDraw.visible = true
 		
+		# Tracking board position for the purpose of 3-fold repetition
+		position_tracker.add_position(board.export_to_fen())
+		var is_three_fold_repetition_satisfied = position_tracker.check_three_fold_repetition()
+		
 		if is_checkmate:
 			game_state = Globals.GameState.CHECKMATE
 			add_checkmate_to_move_list()
@@ -214,7 +223,7 @@ func flip_turn(source_coord : Coord, dest_coord : Coord, piece : Piece, capture 
 			selected_tile = null
 			selected_piece = null
 			$Board/Control/GameOverContainer.visible = true
-		elif is_stalemate:
+		elif is_stalemate or is_three_fold_repetition_satisfied:
 			game_state = Globals.GameState.DRAW
 			add_score_to_move_list_and_set_game_over_label()
 			selected_tile = null
@@ -225,13 +234,10 @@ func flip_turn(source_coord : Coord, dest_coord : Coord, piece : Piece, capture 
 				if abs(source_coord.get_row() - dest_coord.get_row()) == 2:
 					# This was a 2 step move, en passant may be allowed next turn
 					board.set_en_passant_coord(dest_coord)
-					print("set ep: " + str(dest_coord))
 				else:
 					board.set_en_passant_coord(null)
-					print("set ep: null")
 			else:
 				board.set_en_passant_coord(null)
-				print("set ep: null")
 			
 			add_move_to_move_list(piece, source_coord, dest_coord, capture, placed_in_check, en_passant, castling_side, promotion_type)
 			selected_tile = null
@@ -305,11 +311,19 @@ func update_check_marker():
 		markers[king_info[0].get_row()][king_info[0].get_col()].set_color(Color.CRIMSON)
 		markers[king_info[0].get_row()][king_info[0].get_col()].visible = true
 
-func add_index_to_move_list():
-	move_list_moves = move_list_moves + 1
-	if move_list_moves % 2 == 1:
-		var idx = $UI/MoveList.add_item(str(int(move_list_moves / 2) + 1) + ": ")
+func finish_row_on_move_list():
+	# TODO: Stopped here
+	# Make sure we're at the start of a new row
+	while move_list_moves % $UI/MoveList.max_columns != 0:
+		var idx = $UI/MoveList.add_item("")
 		$UI/MoveList.set_item_disabled(idx, true)
+		move_list_moves = move_list_moves + 1
+
+func add_index_to_move_list():
+	if move_list_moves % $UI/MoveList.max_columns == 0:
+		var idx = $UI/MoveList.add_item(str(int(move_list_moves / $UI/MoveList.max_columns) + 1) + ": ")
+		$UI/MoveList.set_item_disabled(idx, true)
+		move_list_moves = move_list_moves + 1
 
 # Note: Does not do en passant, move disambiguation, or promotion
 # Reference: https://en.wikipedia.org/wiki/Algebraic_notation_(chess)
@@ -344,6 +358,7 @@ func add_move_to_move_list(piece : Piece, source : Coord, dest : Coord, capture 
 
 	var idx = $UI/MoveList.add_item(final_string)
 	$UI/MoveList.set_item_disabled(idx, true)
+	move_list_moves = move_list_moves + 1	
 
 func handle_click(boundingRectangle, pos):
 
@@ -503,7 +518,6 @@ func initialize_from_fen(fen):
 			$UI/Clock/WhiteTurnMarker.visible = true
 			$UI/Clock/BlackTurnMarker.visible = false
 		elif fields[1] == 'b':
-			#print("Black turn")
 			board.set_player_turn(Globals.PieceColor.BLACK)
 			$UI/Clock/WhiteTurnMarker.visible = false
 			$UI/Clock/BlackTurnMarker.visible = true
@@ -513,7 +527,7 @@ func initialize_from_fen(fen):
 
 		# En-passant
 		if fields[3] != "-":
-			var ep_coord = Coord.new(int(fields[3][1]), fields[3][0].to_upper())
+			var ep_coord = Coord.new(int(fields[3][1]), fields[3][0].to_lower())
 			board.set_en_passant_coord(ep_coord)
 
 		# Halfmove clock
@@ -641,6 +655,7 @@ func _on_promotion_button_pressed(type : String):
 func _on_force_draw_pressed():
 	game_state = Globals.GameState.DRAW
 	
+	finish_row_on_move_list()
 	add_index_to_move_list()
 	var idx = $UI/MoveList.add_item("1/2-1/2")
 	$UI/MoveList.set_item_disabled(idx, true)
